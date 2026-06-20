@@ -38,7 +38,7 @@ Se o Jonas mencionar algo pessoal, lembre disso nas próximas respostas."""
 
 @app.route("/")
 def index():
-    return send_from_directory("frontend", "index.html")
+    return send_from_directory(".", "index.html")
 
 @app.route("/perguntar", methods=["POST"])
 def perguntar():
