@@ -16,46 +16,36 @@
     font-family: "Helvetica Neue", sans-serif;
     overflow: hidden;
     user-select: none;
+    -webkit-user-select: none;
   }
   canvas { display: block; }
   #overlay {
     position: fixed;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    background: rgba(0,0,0,0.92);
+    background: rgba(0,0,0,0.95);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     z-index: 100;
-    cursor: pointer;
   }
-  #overlay h1 {
-    color: #00BFFF;
-    font-size: 28px;
-    letter-spacing: 8px;
-    margin-bottom: 20px;
-  }
-  #overlay p {
-    color: #334466;
-    font-size: 14px;
-    letter-spacing: 2px;
-  }
+  #overlay h1 { color: #00BFFF; font-size: 28px; letter-spacing: 8px; margin-bottom: 20px; }
+  #overlay p { color: #334466; font-size: 13px; letter-spacing: 2px; }
   #overlay .btn {
     margin-top: 40px;
     border: 1px solid #00BFFF;
     color: #00BFFF;
-    padding: 14px 40px;
+    padding: 16px 48px;
     font-size: 13px;
     letter-spacing: 4px;
     cursor: pointer;
     background: transparent;
-    transition: all 0.3s;
+    -webkit-tap-highlight-color: transparent;
   }
-  #overlay .btn:hover { background: #00BFFF22; }
   #status {
     position: absolute;
-    bottom: 100px;
+    bottom: 110px;
     color: #334466;
     font-size: 13px;
     letter-spacing: 3px;
@@ -65,7 +55,7 @@
   }
   #titulo {
     position: absolute;
-    bottom: 70px;
+    bottom: 80px;
     color: #111d2e;
     font-size: 11px;
     letter-spacing: 6px;
@@ -82,14 +72,18 @@
     letter-spacing: 1px;
     line-height: 1.6;
   }
-  #tap-hint {
+  #play-btn {
     position: absolute;
-    top: 30px;
-    color: #1a2a3a;
-    font-size: 11px;
-    letter-spacing: 2px;
-    width: 100%;
-    text-align: center;
+    bottom: 150px;
+    display: none;
+    background: #00BFFF22;
+    border: 1px solid #00BFFF;
+    color: #00BFFF;
+    padding: 12px 32px;
+    font-size: 13px;
+    letter-spacing: 3px;
+    cursor: pointer;
+    border-radius: 4px;
   }
 </style>
 </head>
@@ -102,9 +96,9 @@
 </div>
 
 <canvas id="c"></canvas>
-<div id="tap-hint">toque para falar</div>
 <div id="status">diga jarvis</div>
 <div id="titulo">J · A · R · V · I · S</div>
+<button id="play-btn" onclick="tocarAudioPendente()">▶ OUVIR RESPOSTA</button>
 <div id="resposta"></div>
 
 <script>
@@ -124,6 +118,8 @@ const R = () => Math.min(canvas.width, canvas.height) * 0.22;
 
 let t = 0, amp = 0, targetAmp = 2;
 let modo = "standby";
+let audioCtx = null;
+let audioPendente = null;
 
 const cores = {
   standby:     ["#003388", "#0044aa", "#0066cc"],
@@ -147,7 +143,7 @@ function blendCor(c1,c2,f) {
 }
 
 function desenhar() {
-  const cx = CX(), cy = CY(), r = R();
+  const cx=CX(), cy=CY(), r=R();
   ctx.clearRect(0,0,canvas.width,canvas.height);
   for(let i=0;i<3;i++) corAtual[i]=blendCor(corAtual[i],corAlvo[i],0.04);
 
@@ -206,6 +202,8 @@ desenhar();
 
 const statusEl=document.getElementById("status");
 const respostaEl=document.getElementById("resposta");
+const playBtn=document.getElementById("play-btn");
+
 const coresStatus={standby:"#334466",ouvindo:"#00cc88",processando:"#ff8800",falando:"#00aaff"};
 const textosStatus={standby:"diga jarvis",ouvindo:"ouvindo...",processando:"processando...",falando:"falando..."};
 
@@ -215,10 +213,44 @@ function setModo(m){
   statusEl.textContent=textosStatus[m]||"";
 }
 
+async function tocarAudio(base64) {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === "suspended") await audioCtx.resume();
+
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+    const buffer = await audioCtx.decodeAudioData(bytes.buffer);
+    const source = audioCtx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(audioCtx.destination);
+    source.onended = () => {
+      setModo("standby");
+      respostaEl.textContent = "";
+      playBtn.style.display = "none";
+      audioPendente = null;
+      escutarWake();
+    };
+    source.start(0);
+    playBtn.style.display = "none";
+    return true;
+  } catch(e) {
+    return false;
+  }
+}
+
+function tocarAudioPendente() {
+  if (audioPendente) tocarAudio(audioPendente);
+}
+
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
 let recWake=null, ativo=false;
 
 function iniciar(){
+  // Inicializa AudioContext na interação do usuário
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   document.getElementById("overlay").style.display="none";
   ativo=true;
   escutarWake();
@@ -232,7 +264,7 @@ function escutarWake(){
   recWake.interimResults=false;
   recWake.onresult=(e)=>{
     const txt=e.results[0][0].transcript.toLowerCase();
-    if(txt.includes("jarvis")||txt.includes("jarves")||txt.includes("járvis")){
+    if(txt.includes("jarvis")||txt.includes("jarves")){
       ouvirComando();
     } else { escutarWake(); }
   };
@@ -264,22 +296,13 @@ function ouvirComando(){
       const dados=await res.json();
       respostaEl.textContent=dados.resposta;
       setModo("falando");
+      audioPendente=dados.audio;
 
-      const audioData="data:audio/mp3;base64,"+dados.audio;
-      const audio=new Audio(audioData);
-      audio.onended=()=>{
-        setModo("standby");
-        respostaEl.textContent="";
-        escutarWake();
-      };
-      audio.onerror=()=>{
-        setModo("standby");
-        escutarWake();
-      };
-      audio.play().catch(()=>{
-        setModo("standby");
-        escutarWake();
-      });
+      const ok = await tocarAudio(dados.audio);
+      if (!ok) {
+        // Se não conseguir tocar automaticamente, mostra botão
+        playBtn.style.display="block";
+      }
     }catch(err){
       setModo("standby");
       escutarWake();
@@ -291,7 +314,6 @@ function ouvirComando(){
   try{ recCmd.start(); }catch(e){ setModo("standby"); escutarWake(); }
 }
 
-// Toque na tela também ativa
 canvas.addEventListener("click",()=>{
   if(ativo&&modo==="standby") ouvirComando();
 });
