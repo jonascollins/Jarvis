@@ -1,4 +1,4 @@
 flash
-anthropc
+anthropic
 elevenlabs
 gunicorn
