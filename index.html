@@ -2,303 +2,107 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>JARVIS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JARVIS TEST</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    background: #000;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    font-family: "Helvetica Neue", sans-serif;
-    overflow: hidden;
-    user-select: none;
-    -webkit-user-select: none;
-  }
-  canvas { display: block; }
-  #overlay {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(0,0,0,0.95);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-  }
-  #overlay h1 { color: #00BFFF; font-size: 28px; letter-spacing: 8px; margin-bottom: 20px; }
-  #overlay p { color: #334466; font-size: 13px; letter-spacing: 2px; margin-bottom: 8px; }
-  #overlay .btn {
-    margin-top: 40px;
-    border: 1px solid #00BFFF;
-    color: #00BFFF;
-    padding: 16px 48px;
-    font-size: 13px;
-    letter-spacing: 4px;
-    cursor: pointer;
-    background: transparent;
-    -webkit-tap-highlight-color: transparent;
-  }
-  #status {
-    position: absolute;
-    bottom: 110px;
-    color: #334466;
-    font-size: 13px;
-    letter-spacing: 3px;
-    transition: color 0.5s;
-    text-align: center;
-    width: 100%;
-  }
-  #titulo {
-    position: absolute;
-    bottom: 80px;
-    color: #111d2e;
-    font-size: 11px;
-    letter-spacing: 6px;
-    width: 100%;
-    text-align: center;
-  }
-  #resposta {
-    position: absolute;
-    bottom: 20px;
-    color: #335577;
-    font-size: 12px;
-    width: 85%;
-    text-align: center;
-    letter-spacing: 1px;
-    line-height: 1.6;
-  }
-  #transcript {
-    position: absolute;
-    top: 40px;
-    color: #1a3a5a;
-    font-size: 11px;
-    width: 85%;
-    text-align: center;
-    letter-spacing: 1px;
-    font-style: italic;
-  }
-  #play-btn {
-    position: absolute;
-    bottom: 150px;
-    display: none;
-    background: #00BFFF22;
-    border: 1px solid #00BFFF;
-    color: #00BFFF;
-    padding: 12px 32px;
-    font-size: 13px;
-    letter-spacing: 3px;
-    cursor: pointer;
-    border-radius: 4px;
-  }
+  body { background: #000; color: #fff; font-family: Arial; padding: 40px; }
+  button { background: #00BFFF; color: #000; border: none; padding: 15px 30px; font-size: 16px; margin: 10px; border-radius: 8px; cursor: pointer; }
+  #log { background: #111; padding: 20px; margin-top: 20px; border-radius: 8px; min-height: 200px; font-size: 13px; line-height: 1.8; }
+  #status { color: #00BFFF; font-size: 18px; margin: 20px 0; }
 </style>
 </head>
 <body>
-<div id="overlay">
-  <h1>J·A·R·V·I·S</h1>
-  <p>versão 2.0</p>
-  <p style="color:#1a2a3a;font-size:11px">com memória e histórico</p>
-  <button class="btn" onclick="iniciar()">INICIAR</button>
-<button class="btn" style="margin-top:15px;font-size:11px" onclick="ouvirComando()">🎤 FALAR</button>
-</div>
-
-<canvas id="c"></canvas>
-<div id="transcript"></div>
-<div id="status">diga jarvis</div>
-<div id="titulo">J · A · R · V · I · S  2.0</div>
-<button id="play-btn" onclick="tocarAudioPendente()">▶ OUVIR RESPOSTA</button>
-<div id="resposta"></div>
+<h2 style="color:#00BFFF">JARVIS - Teste</h2>
+<div id="status">Pronto</div>
+<button onclick="testarServidor()">Testar Servidor</button>
+<button onclick="testarMicrofone()">Testar Microfone</button>
+<button onclick="perguntarJarvis()">Perguntar ao JARVIS</button>
+<div id="log">Log aparece aqui...</div>
 
 <script>
-const canvas = document.getElementById("c");
-const ctx = canvas.getContext("2d");
-const USER_ID = "jonas";
-
-function resize() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-}
-resize();
-window.addEventListener("resize", resize);
-
-const CX = () => canvas.width / 2;
-const CY = () => canvas.height / 2;
-const R = () => Math.min(canvas.width, canvas.height) * 0.22;
-
-let t = 0, amp = 0, targetAmp = 2, modo = "standby";
-let audioCtx = null, audioPendente = null, ocupado = false;
-
-const cores = {
-  standby:     ["#003388","#0044aa","#0066cc"],
-  ouvindo:     ["#006633","#008844","#00cc66"],
-  processando: ["#884400","#aa5500","#cc7700"],
-  falando:     ["#005599","#0077cc","#00aaff"],
-};
-let corAtual = [...cores.standby], corAlvo = [...cores.standby];
-
-function lerp(a,b,f){return a+(b-a)*f;}
-function hexToRgb(h){return[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];}
-function rgbToHex(r,g,b){return"#"+[r,g,b].map(v=>Math.round(Math.max(0,Math.min(255,v))).toString(16).padStart(2,"0")).join("");}
-function blendCor(c1,c2,f){const[r1,g1,b1]=hexToRgb(c1),[r2,g2,b2]=hexToRgb(c2);return rgbToHex(lerp(r1,r2,f),lerp(g1,g2,f),lerp(b1,b2,f));}
-
-function desenhar(){
-  const cx=CX(),cy=CY(),r=R();
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  for(let i=0;i<3;i++) corAtual[i]=blendCor(corAtual[i],corAlvo[i],0.04);
-  for(let i=60;i>0;i--){
-    const frac=i/60,gR=r*1.8*frac+amp*0.8,[rv,g,b]=hexToRgb(corAtual[0]);
-    ctx.beginPath();ctx.arc(cx,cy,gR,0,Math.PI*2);
-    ctx.fillStyle=`rgba(${Math.round(rv*0.25)},${Math.round(g*0.25)},${Math.round(b*0.25)},${frac*0.06})`;ctx.fill();
-  }
-  const N=200;ctx.beginPath();
-  for(let i=0;i<=N;i++){
-    const theta=(2*Math.PI*i)/N;
-    const onda=Math.sin(2*theta+t)*amp*0.35+Math.sin(3*theta-t*1.4)*amp*0.25+Math.sin(5*theta+t*0.8)*amp*0.15+Math.sin(7*theta-t*1.1)*amp*0.1+Math.sin(theta*1.5+t*0.5)*amp*0.15;
-    const rad=r+onda,x=cx+rad*Math.cos(theta),y=cy+rad*Math.sin(theta);
-    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
-  }
-  ctx.closePath();
-  const grad=ctx.createRadialGradient(cx-r*0.2,cy-r*0.3,r*0.05,cx,cy,r+amp);
-  grad.addColorStop(0,corAtual[2]);grad.addColorStop(0.5,corAtual[1]);grad.addColorStop(1,corAtual[0]);
-  ctx.fillStyle=grad;ctx.fill();ctx.strokeStyle=corAtual[2];ctx.lineWidth=2;ctx.stroke();
-  ctx.beginPath();ctx.arc(cx-r*0.25,cy-r*0.45,r*0.12,0,Math.PI*2);ctx.fillStyle="rgba(255,255,255,0.18)";ctx.fill();
-  const v={standby:0.008,ouvindo:0.09,processando:0.13,falando:0.16};
-  t+=v[modo]||0.008;
-  const a={standby:3,ouvindo:20,processando:30,falando:45};
-  targetAmp=a[modo]||3;amp+=(targetAmp-amp)*0.07;
-  corAlvo=[...(cores[modo]||cores.standby)];
-  requestAnimationFrame(desenhar);
-}
-desenhar();
-
-const statusEl=document.getElementById("status");
-const respostaEl=document.getElementById("resposta");
-const transcriptEl=document.getElementById("transcript");
-const playBtn=document.getElementById("play-btn");
-const coresStatus={standby:"#334466",ouvindo:"#00cc88",processando:"#ff8800",falando:"#00aaff"};
-const textosStatus={standby:"diga jarvis",ouvindo:"ouvindo...",processando:"processando...",falando:"falando..."};
-
-function setModo(m){modo=m;statusEl.style.color=coresStatus[m]||"#334466";statusEl.textContent=textosStatus[m]||"";}
-
-async function tocarAudio(base64){
-  try{
-    if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-    if(audioCtx.state==="suspended") await audioCtx.resume();
-    const bin=atob(base64),bytes=new Uint8Array(bin.length);
-    for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
-    const buf=await audioCtx.decodeAudioData(bytes.buffer);
-    const src=audioCtx.createBufferSource();
-    src.buffer=buf;src.connect(audioCtx.destination);
-    src.onended=()=>{
-      setModo("standby");respostaEl.textContent="";transcriptEl.textContent="";
-      playBtn.style.display="none";audioPendente=null;ocupado=false;
-      escutarWake();
-    };
-    src.start(0);playBtn.style.display="none";return true;
-  }catch(e){ocupado=false;return false;}
-}
-function tocarAudioPendente(){if(audioPendente) tocarAudio(audioPendente);}
-
-const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-let recAtivo=null,ativo=false,pauseTimer=null,transcriptAcumulado="";
-
-function iniciar(){
-  audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-  document.getElementById("overlay").style.display="none";
-  ativo=true;escutarWake();
+function log(msg) {
+  document.getElementById("log").innerHTML += "<br>" + new Date().toLocaleTimeString() + " → " + msg;
 }
 
-function pararRec(){
-  if(recAtivo){try{recAtivo.stop();}catch(e){}recAtivo=null;}
-  clearTimeout(pauseTimer);
-}
-
-function escutarWake(){
-  if(!SR||!ativo||ocupado) return;
-  pararRec();setModo("standby");
-  const rec=new SR();
-  rec.lang="pt-BR";rec.continuous=false;rec.interimResults=false;rec.maxAlternatives=3;
-  recAtivo=rec;
-  rec.onresult=(e)=>{
-    for(let r=0;r<e.results.length;r++){
-      for(let a=0;a<e.results[r].length;a++){
-        const txt=e.results[r][a].transcript.toLowerCase();
-        if(txt.includes("jarvis")||txt.includes("jarves")||txt.includes("jarvi")){
-          recAtivo=null;ouvirComando();return;
-        }
-      }
-    }
-    recAtivo=null;escutarWake();
-  };
-  rec.onerror=()=>{recAtivo=null;if(ativo&&!ocupado) setTimeout(escutarWake,300);};
-  rec.onend=()=>{if(recAtivo===rec) recAtivo=null;if(ativo&&!ocupado&&modo==="standby") setTimeout(escutarWake,100);};
-  try{rec.start();}catch(e){recAtivo=null;setTimeout(escutarWake,500);}
-}
-
-function ouvirComando(){
-  if(ocupado) return;
-  pararRec();setModo("ouvindo");
-  transcriptAcumulado="";transcriptEl.textContent="";
-  const rec=new SR();
-  rec.lang="pt-BR";rec.continuous=true;rec.interimResults=true;rec.maxAlternatives=1;
-  recAtivo=rec;
-  rec.onresult=(e)=>{
-    let interim="",final="";
-    for(let i=e.resultIndex;i<e.results.length;i++){
-      const txt=e.results[i][0].transcript;
-      if(e.results[i].isFinal){final+=txt;}else{interim+=txt;}
-    }
-    if(final) transcriptAcumulado+=final;
-    transcriptEl.textContent=transcriptAcumulado||interim;
-    clearTimeout(pauseTimer);
-    if(transcriptAcumulado||final){
-      pauseTimer=setTimeout(()=>{
-        const p=transcriptAcumulado.trim();
-        if(p&&!ocupado){try{rec.stop();}catch(e){}recAtivo=null;processarPergunta(p);}
-      },1500);
-    }
-  };
-  rec.onerror=()=>{
-    clearTimeout(pauseTimer);recAtivo=null;
-    const p=transcriptAcumulado.trim();
-    if(p&&!ocupado){processarPergunta(p);}
-    else if(!ocupado){setModo("standby");transcriptEl.textContent="";setTimeout(escutarWake,200);}
-  };
-  rec.onend=()=>{
-    clearTimeout(pauseTimer);
-    if(recAtivo===rec) recAtivo=null;
-    if(modo==="ouvindo"&&!ocupado){
-      const p=transcriptAcumulado.trim();
-      if(p){processarPergunta(p);}
-      else{setModo("standby");transcriptEl.textContent="";setTimeout(escutarWake,200);}
-    }
-  };
-  try{rec.start();}catch(e){recAtivo=null;setModo("standby");setTimeout(escutarWake,500);}
-}
-
-async function processarPergunta(pergunta){
-  if(ocupado) return;
-  ocupado=true;pararRec();setModo("processando");transcriptEl.textContent=pergunta;
-  try{
-    const res=await fetch("/perguntar",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({pergunta,user_id:USER_ID})
+async function testarServidor() {
+  log("Testando servidor...");
+  try {
+    const res = await fetch("/perguntar", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({pergunta: "oi", user_id: "jonas"})
     });
-    const dados=await res.json();
-    respostaEl.textContent=dados.resposta;setModo("falando");audioPendente=dados.audio;
-    const ok=await tocarAudio(dados.audio);
-    if(!ok){playBtn.style.display="block";ocupado=false;}
-  }catch(err){
-    ocupado=false;setModo("standby");transcriptEl.textContent="";setTimeout(escutarWake,300);
+    const dados = await res.json();
+    log("✅ Servidor OK! Resposta: " + dados.resposta);
+    if (dados.audio) {
+      log("✅ Áudio recebido!");
+      tocarAudio(dados.audio);
+    }
+  } catch(e) {
+    log("❌ Erro: " + e.message);
   }
 }
 
-canvas.addEventListener("click",()=>{if(ativo&&modo==="standby"&&!ocupado) ouvirComando();});
+async function tocarAudio(base64) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const bin = atob(base64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const buf = await ctx.decodeAudioData(bytes.buffer);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    src.start(0);
+    log("✅ Áudio tocando!");
+  } catch(e) {
+    log("❌ Erro no áudio: " + e.message);
+  }
+}
+
+function testarMicrofone() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { log("❌ SpeechRecognition não suportado!"); return; }
+  log("Microfone iniciando...");
+  const rec = new SR();
+  rec.lang = "pt-BR";
+  rec.onstart = () => log("✅ Microfone ativo! Fale algo...");
+  rec.onresult = (e) => log("✅ Ouvi: " + e.results[0][0].transcript);
+  rec.onerror = (e) => log("❌ Erro microfone: " + e.error);
+  rec.onend = () => log("Microfone parou");
+  rec.start();
+}
+
+function perguntarJarvis() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { log("❌ SpeechRecognition não suportado!"); return; }
+  log("Fale sua pergunta...");
+  document.getElementById("status").textContent = "Ouvindo...";
+  const rec = new SR();
+  rec.lang = "pt-BR";
+  rec.onresult = async (e) => {
+    const pergunta = e.results[0][0].transcript;
+    log("Você disse: " + pergunta);
+    document.getElementById("status").textContent = "Processando...";
+    try {
+      const res = await fetch("/perguntar", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({pergunta, user_id: "jonas"})
+      });
+      const dados = await res.json();
+      log("JARVIS: " + dados.resposta);
+      document.getElementById("status").textContent = "Falando...";
+      await tocarAudio(dados.audio);
+      document.getElementById("status").textContent = "Pronto";
+    } catch(e) {
+      log("❌ Erro: " + e.message);
+      document.getElementById("status").textContent = "Erro";
+    }
+  };
+  rec.onerror = (e) => { log("❌ Erro: " + e.error); document.getElementById("status").textContent = "Erro"; };
+  rec.start();
+}
 </script>
 </body>
 </html>
