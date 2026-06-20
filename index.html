@@ -72,6 +72,16 @@
     letter-spacing: 1px;
     line-height: 1.6;
   }
+  #transcript {
+    position: absolute;
+    top: 40px;
+    color: #1a3a5a;
+    font-size: 11px;
+    width: 85%;
+    text-align: center;
+    letter-spacing: 1px;
+    font-style: italic;
+  }
   #play-btn {
     position: absolute;
     bottom: 150px;
@@ -96,6 +106,7 @@
 </div>
 
 <canvas id="c"></canvas>
+<div id="transcript"></div>
 <div id="status">diga jarvis</div>
 <div id="titulo">J · A · R · V · I · S</div>
 <button id="play-btn" onclick="tocarAudioPendente()">▶ OUVIR RESPOSTA</button>
@@ -202,6 +213,7 @@ desenhar();
 
 const statusEl=document.getElementById("status");
 const respostaEl=document.getElementById("resposta");
+const transcriptEl=document.getElementById("transcript");
 const playBtn=document.getElementById("play-btn");
 
 const coresStatus={standby:"#334466",ouvindo:"#00cc88",processando:"#ff8800",falando:"#00aaff"};
@@ -217,11 +229,9 @@ async function tocarAudio(base64) {
   try {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state === "suspended") await audioCtx.resume();
-
     const binary = atob(base64);
     const bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-
     const buffer = await audioCtx.decodeAudioData(bytes.buffer);
     const source = audioCtx.createBufferSource();
     source.buffer = buffer;
@@ -229,9 +239,11 @@ async function tocarAudio(base64) {
     source.onended = () => {
       setModo("standby");
       respostaEl.textContent = "";
+      transcriptEl.textContent = "";
       playBtn.style.display = "none";
       audioPendente = null;
-      escutarWake();
+      // Volta automaticamente a ouvir JARVIS
+      setTimeout(escutarWake, 500);
     };
     source.start(0);
     playBtn.style.display = "none";
@@ -247,9 +259,10 @@ function tocarAudioPendente() {
 
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
 let recWake=null, ativo=false;
+let pauseTimer=null;
+let transcriptAcumulado="";
 
 function iniciar(){
-  // Inicializa AudioContext na interação do usuário
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   document.getElementById("overlay").style.display="none";
   ativo=true;
@@ -257,7 +270,9 @@ function iniciar(){
 }
 
 function escutarWake(){
-  if(!SR||!ativo) return;
+  if(!SR||!ativo||modo!=="standby") return;
+  if(recWake){ try{recWake.stop();}catch(e){} }
+  
   recWake=new SR();
   recWake.lang="pt-BR";
   recWake.continuous=false;
@@ -266,52 +281,104 @@ function escutarWake(){
     const txt=e.results[0][0].transcript.toLowerCase();
     if(txt.includes("jarvis")||txt.includes("jarves")){
       ouvirComando();
-    } else { escutarWake(); }
+    } else {
+      setTimeout(escutarWake, 200);
+    }
   };
-  recWake.onerror=()=>{ if(ativo) setTimeout(escutarWake,500); };
-  recWake.onend=()=>{ if(ativo&&modo==="standby") escutarWake(); };
-  try{ recWake.start(); }catch(e){}
+  recWake.onerror=(e)=>{ if(ativo&&modo==="standby") setTimeout(escutarWake,500); };
+  recWake.onend=()=>{ if(ativo&&modo==="standby") setTimeout(escutarWake,200); };
+  try{ recWake.start(); }catch(e){ setTimeout(escutarWake,1000); }
 }
 
 function ouvirComando(){
-  if(recWake){ try{recWake.stop();}catch(e){} }
+  if(recWake){ try{recWake.stop();}catch(e){} recWake=null; }
   setModo("ouvindo");
+  transcriptAcumulado="";
+  transcriptEl.textContent="";
 
   const recCmd=new SR();
   recCmd.lang="pt-BR";
-  recCmd.continuous=false;
-  recCmd.interimResults=false;
+  recCmd.continuous=true;
+  recCmd.interimResults=true;
 
-  recCmd.onresult=async(e)=>{
-    const pergunta=e.results[0][0].transcript;
-    setModo("processando");
-    respostaEl.textContent="";
+  recCmd.onresult=(e)=>{
+    let interim="", final="";
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const txt=e.results[i][0].transcript;
+      if(e.results[i].isFinal){ final+=txt; }
+      else{ interim+=txt; }
+    }
+    if(final) transcriptAcumulado+=final;
+    transcriptEl.textContent=transcriptAcumulado||interim;
 
-    try{
-      const res=await fetch("/perguntar",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({pergunta})
-      });
-      const dados=await res.json();
-      respostaEl.textContent=dados.resposta;
-      setModo("falando");
-      audioPendente=dados.audio;
-
-      const ok = await tocarAudio(dados.audio);
-      if (!ok) {
-        // Se não conseguir tocar automaticamente, mostra botão
-        playBtn.style.display="block";
-      }
-    }catch(err){
-      setModo("standby");
-      escutarWake();
+    // Timer de pausa — processa após 3 segundos de silêncio
+    clearTimeout(pauseTimer);
+    if(transcriptAcumulado||final){
+      pauseTimer=setTimeout(()=>{
+        const pergunta=transcriptAcumulado.trim();
+        if(pergunta){
+          try{recCmd.stop();}catch(e){}
+          processarPergunta(pergunta);
+        }
+      }, 3000);
     }
   };
 
-  recCmd.onerror=()=>{ setModo("standby"); escutarWake(); };
-  recCmd.onend=()=>{ if(modo==="ouvindo"){ setModo("standby"); escutarWake(); } };
-  try{ recCmd.start(); }catch(e){ setModo("standby"); escutarWake(); }
+  recCmd.onerror=(e)=>{
+    clearTimeout(pauseTimer);
+    if(transcriptAcumulado.trim()){
+      processarPergunta(transcriptAcumulado.trim());
+    } else {
+      setModo("standby");
+      transcriptEl.textContent="";
+      setTimeout(escutarWake,500);
+    }
+  };
+
+  recCmd.onend=()=>{
+    clearTimeout(pauseTimer);
+    if(modo==="ouvindo"){
+      const pergunta=transcriptAcumulado.trim();
+      if(pergunta){
+        processarPergunta(pergunta);
+      } else {
+        setModo("standby");
+        transcriptEl.textContent="";
+        setTimeout(escutarWake,500);
+      }
+    }
+  };
+
+  try{ recCmd.start(); }catch(e){
+    setModo("standby");
+    setTimeout(escutarWake,500);
+  }
+}
+
+async function processarPergunta(pergunta){
+  setModo("processando");
+  transcriptEl.textContent=pergunta;
+
+  try{
+    const res=await fetch("/perguntar",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({pergunta})
+    });
+    const dados=await res.json();
+    respostaEl.textContent=dados.resposta;
+    setModo("falando");
+    audioPendente=dados.audio;
+
+    const ok = await tocarAudio(dados.audio);
+    if (!ok) {
+      playBtn.style.display="block";
+    }
+  }catch(err){
+    setModo("standby");
+    transcriptEl.textContent="";
+    setTimeout(escutarWake,500);
+  }
 }
 
 canvas.addEventListener("click",()=>{
