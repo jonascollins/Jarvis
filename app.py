@@ -6,6 +6,7 @@ from elevenlabs.client import ElevenLabs
 from core.memory import salvar_mensagem, buscar_historico, buscar_contexto
 
 app = Flask(__name__)
+app.static_folder = "frontend"
 
 client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
 elevenlabs = ElevenLabs(api_key=os.environ.get("ELEVENLABS_API_KEY"))
@@ -37,7 +38,7 @@ Se o Jonas mencionar algo pessoal, lembre disso nas próximas respostas."""
 
 @app.route("/")
 def index():
-    return send_from_directory(os.path.join(os.path.dirname(_file_),"frontend"), "index.html")
+    return send_from_directory("frontend", "index.html")
 
 @app.route("/perguntar", methods=["POST"])
 def perguntar():
