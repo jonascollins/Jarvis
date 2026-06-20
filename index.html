@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JARVIS</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    font-family: "Helvetica Neue", sans-serif;
+    overflow: hidden;
+  }
+  canvas { display: block; }
+  #status {
+    position: absolute;
+    bottom: 100px;
+    color: #334466;
+    font-size: 14px;
+    letter-spacing: 3px;
+    text-transform: lowercase;
+    transition: color 0.5s;
+  }
+  #titulo {
+    position: absolute;
+    bottom: 70px;
+    color: #111d2e;
+    font-size: 12px;
+    letter-spacing: 6px;
+  }
+  #resposta {
+    position: absolute;
+    bottom: 20px;
+    color: #335577;
+    font-size: 13px;
+    max-width: 80%;
+    text-align: center;
+    letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="status">diga jarvis</div>
+<div id="titulo">J · A · R · V · I · S</div>
+<div id="resposta"></div>
+
+<script>
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+const CX = canvas.width / 2;
+const CY = canvas.height / 2;
+const R = Math.min(canvas.width, canvas.height) * 0.22;
+
+let t = 0;
+let amp = 0;
+let targetAmp = 2;
+let modo = "standby"; // standby, ouvindo, processando, falando
+
+const cores = {
+  standby:     ["#003388", "#0044aa", "#0066cc"],
+  ouvindo:     ["#006633", "#008844", "#00cc66"],
+  processando: ["#883300", "#aa4400", "#cc6600"],
+  falando:     ["#005599", "#0077cc", "#00aaff"],
+};
+
+let corAtual = [...cores.standby];
+let corAlvo  = [...cores.standby];
+
+function lerp(a, b, f) { return a + (b - a) * f; }
+function hexToRgb(h) {
+  const r = parseInt(h.slice(1,3),16);
+  const g = parseInt(h.slice(3,5),16);
+  const b = parseInt(h.slice(5,7),16);
+  return [r, g, b];
+}
+function rgbToHex(r, g, b) {
+  return "#" + [r,g,b].map(v => Math.round(Math.max(0,Math.min(255,v))).toString(16).padStart(2,"0")).join("");
+}
+function blendCor(c1, c2, f) {
+  const [r1,g1,b1] = hexToRgb(c1);
+  const [r2,g2,b2] = hexToRgb(c2);
+  return rgbToHex(lerp(r1,r2,f), lerp(g1,g2,f), lerp(b1,b2,f));
+}
+
+function desenhar() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Transição de cor
+  for (let i = 0; i < 3; i++) {
+    corAtual[i] = blendCor(corAtual[i], corAlvo[i], 0.04);
+  }
+
+  // Glow de fundo
+  for (let i = 60; i > 0; i--) {
+    const frac = i / 60;
+    const gR = R * 1.8 * frac + amp * 0.8;
+    const [r,g,b] = hexToRgb(corAtual[0]);
+    ctx.beginPath();
+    ctx.arc(CX, CY, gR, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(${Math.round(r*0.25)},${Math.round(g*0.25)},${Math.round(b*0.25)},${frac * 0.06})`;
+    ctx.fill();
+  }
+
+  // Blob
+  const N = 200;
+  ctx.beginPath();
+  for (let i = 0; i <= N; i++) {
+    const theta = (2 * Math.PI * i) / N;
+    const onda =
+      Math.sin(2 * theta + t * 1.0) * amp * 0.35 +
+      Math.sin(3 * theta - t * 1.4) * amp * 0.25 +
+      Math.sin(5 * theta + t * 0.8) * amp * 0.15 +
+      Math.sin(7 * theta - t * 1.1) * amp * 0.10 +
+      Math.sin(theta * 1.5 + t * 0.5) * amp * 0.15;
+    const r = R + onda;
+    const x = CX + r * Math.cos(theta);
+    const y = CY + r * Math.sin(theta);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+
+  // Gradiente interno
+  const grad = ctx.createRadialGradient(CX - R*0.2, CY - R*0.3, R*0.05, CX, CY, R + amp);
+  grad.addColorStop(0, corAtual[2]);
+  grad.addColorStop(0.5, corAtual[1]);
+  grad.addColorStop(1, corAtual[0]);
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Contorno
+  ctx.strokeStyle = corAtual[2];
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Reflexo
+  ctx.beginPath();
+  ctx.arc(CX - R*0.25, CY - R*0.45, R*0.12, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(255,255,255,0.18)";
+  ctx.fill();
+
+  t += modo === "standby" ? 0.008 : modo === "ouvindo" ? 0.08 : modo === "processando" ? 0.12 : 0.15;
+  const alvos = { standby: 3, ouvindo: 18, processando: 28, falando: 40 };
+  targetAmp = alvos[modo] || 3;
+  amp += (targetAmp - amp) * 0.07;
+
+  corAlvo = [...(cores[modo] || cores.standby)];
+
+  requestAnimationFrame(desenhar);
+}
+desenhar();
+
+// Status
+const statusEl = document.getElementById("status");
+const respostaEl = document.getElementById("resposta");
+const coresStatus = {
+  standby: "#334466",
+  ouvindo: "#00cc88",
+  processando: "#ff8800",
+  falando: "#00aaff",
+};
+const textosStatus = {
+  standby: "diga jarvis",
+  ouvindo: "ouvindo...",
+  processando: "processando...",
+  falando: "falando...",
+};
+
+function setModo(m) {
+  modo = m;
+  statusEl.style.color = coresStatus[m] || "#334466";
+  statusEl.textContent = textosStatus[m] || "";
+}
+
+// Reconhecimento de voz
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null;
+let escutandoWake = false;
+
+function iniciarWakeWord() {
+  if (!SR) { statusEl.textContent = "navegador sem suporte"; return; }
+  rec = new SR();
+  rec.lang = "pt-BR";
+  rec.continuous = false;
+  rec.interimResults = false;
+  escutandoWake = true;
+
+  rec.onresult = (e) => {
+    const txt = e.results[0][0].transcript.toLowerCase();
+    if (txt.includes("jarvis") || txt.includes("jarves")) {
+      ouvirComando();
+    } else {
+      rec.start();
+    }
+  };
+  rec.onerror = () => { if (escutandoWake) rec.start(); };
+  rec.onend = () => { if (escutandoWake && modo === "standby") rec.start(); };
+  rec.start();
+}
+
+function ouvirComando() {
+  escutandoWake = false;
+  if (rec) rec.stop();
+  setModo("ouvindo");
+
+  const recCmd = new SR();
+  recCmd.lang = "pt-BR";
+  recCmd.continuous = false;
+  recCmd.interimResults = false;
+
+  recCmd.onresult = async (e) => {
+    const pergunta = e.results[0][0].transcript;
+    setModo("processando");
+
+    try {
+      const res = await fetch("/perguntar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pergunta })
+      });
+      const dados = await res.json();
+      respostaEl.textContent = dados.resposta;
+      setModo("falando");
+
+      const audio = new Audio("data:audio/mp3;base64," + dados.audio);
+      audio.onended = () => {
+        setModo("standby");
+        escutandoWake = true;
+        iniciarWakeWord();
+      };
+      audio.play();
+    } catch(err) {
+      setModo("standby");
+      escutandoWake = true;
+      iniciarWakeWord();
+    }
+  };
+
+  recCmd.onerror = () => {
+    setModo("standby");
+    escutandoWake = true;
+    iniciarWakeWord();
+  };
+
+  recCmd.start();
+}
+
+// Iniciar ao clicar (necessário para microfone no navegador)
+canvas.addEventListener("click", () => {
+  if (modo === "standby" && !escutandoWake) iniciarWakeWord();
+});
+iniciarWakeWord();
+</script>
+</body>
+</html>
