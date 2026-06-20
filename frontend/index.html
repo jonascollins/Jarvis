@@ -1,1 +1,50 @@
-
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>JARVIS</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    font-family: "Helvetica Neue", sans-serif;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  canvas { display: block; }
+  #overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.95);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+  #overlay h1 { color: #00BFFF; font-size: 28px; letter-spacing: 8px; margin-bottom: 20px; }
+  #overlay p { color: #334466; font-size: 13px; letter-spacing: 2px; margin-bottom: 8px; }
+  #overlay .btn {
+    margin-top: 40px;
+    border: 1px solid #00BFFF;
+    color: #00BFFF;
+    padding: 16px 48px;
+    font-size: 13px;
+    letter-spacing: 4px;
+    cursor: pointer;
+    background: transparent;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #status {
+    position: absolute;
+    bottom: 110px;
+    color: #334466;
+    font-size: 13px;
