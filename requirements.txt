@@ -1,0 +1,4 @@
+flash
+anthopic
+elevenlabs
+gunicorn
