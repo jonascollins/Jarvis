@@ -1,684 +1,303 @@
-cat > /mnt/user-data/outputs/index.html << 'HTMLEOF'
 <!DOCTYPE html>
+
 <html lang="pt-BR">
+
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>BlueGlass · Jarvis</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Liquid Holographic Sphere</title>
+
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500&display=swap');
 
-  * { margin:0; padding:0; box-sizing:border-box; -webkit-font-smoothing:antialiased; }
+*{
 
-  :root {
-    --blue:      #0a84ff;
-    --blue-dim:  rgba(10,132,255,0.25);
-    --blue-glow: rgba(10,132,255,0.15);
-    --green:     #30d158;
-    --orange:    #ff9f0a;
-    --text:      rgba(255,255,255,0.88);
-    --text-dim:  rgba(255,255,255,0.4);
-    --text-faint:rgba(255,255,255,0.18);
-    --glass:     rgba(255,255,255,0.06);
-    --border:    rgba(255,255,255,0.12);
-  }
+    margin:0;
 
-  html, body {
-    width:100%; height:100%;
+    padding:0;
+
+    box-sizing:border-box;
+
+}
+
+body{
+
+    height:100vh;
+
+    background:#000;
+
     overflow:hidden;
-    font-family:'Inter', -apple-system, sans-serif;
-    background:
-      radial-gradient(ellipse 80% 60% at 20% 10%, rgba(10,132,255,0.10) 0%, transparent 65%),
-      radial-gradient(ellipse 60% 50% at 80% 85%, rgba(10,60,200,0.08) 0%, transparent 65%),
-      linear-gradient(160deg, rgba(6,12,36,0.96) 0%, rgba(3,6,20,0.98) 100%);
-    color: var(--text);
-    user-select:none; -webkit-user-select:none;
-  }
 
-  /* ── Liquid wave canvas (background) ── */
-  #waves {
-    position:fixed; inset:0; z-index:0; pointer-events:none; opacity:0.4;
-  }
+    display:flex;
 
-  /* ── Fine grid ── */
-  .grid {
-    position:fixed; inset:0; z-index:0; pointer-events:none;
-    background-image:
-      linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px);
-    background-size:44px 44px;
-  }
+    justify-content:center;
 
-  /* ── Scan line ── */
-  .scan {
-    position:fixed; left:0; right:0; height:1px; z-index:1; pointer-events:none;
-    background:linear-gradient(90deg,transparent,rgba(10,132,255,0.4),transparent);
-    animation:scanMove 9s linear infinite; opacity:0.4;
-  }
-  @keyframes scanMove { from{top:-1px} to{top:100vh} }
+    align-items:center;
 
-  /* ── Corner marks ── */
-  .corner { position:fixed; width:18px; height:18px; z-index:2; pointer-events:none; opacity:0.25; }
-  .corner.tl{top:0;left:0;  border-top:1px solid #fff;border-left:1px solid #fff;}
-  .corner.tr{top:0;right:0; border-top:1px solid #fff;border-right:1px solid #fff;}
-  .corner.bl{bottom:0;left:0; border-bottom:1px solid #fff;border-left:1px solid #fff;}
-  .corner.br{bottom:0;right:0;border-bottom:1px solid #fff;border-right:1px solid #fff;}
+    font-family:Arial, sans-serif;
 
-  /* ── Particles ── */
-  #pts { position:fixed; inset:0; z-index:0; pointer-events:none; }
-  .pt {
-    position:absolute; border-radius:50%;
-    animation:ptUp linear infinite; opacity:0;
-  }
-  @keyframes ptUp {
-    0%  {transform:translateY(105vh) scale(0);opacity:0;}
-    8%  {opacity:1;}
-    92% {opacity:0.5;}
-    100%{transform:translateY(-8vh) scale(1);opacity:0;}
-  }
+}
 
-  /* ══════════════════════════
-     OVERLAY DE BOOT
-  ══════════════════════════ */
-  #overlay {
-    position:fixed; inset:0; z-index:200;
-    display:flex; flex-direction:column;
-    align-items:center; justify-content:center; gap:0;
-    background:rgba(3,6,20,0.97);
-    transition:opacity 0.8s ease;
-  }
-  #overlay.hide { opacity:0; pointer-events:none; }
+canvas{
 
-  .boot-logo {
-    font-size:11px; font-weight:300;
-    letter-spacing:0.55em; text-transform:uppercase;
-    color:rgba(255,255,255,0.25); margin-bottom:48px;
-  }
+    position:absolute;
 
-  .boot-name {
-    font-size:52px; font-weight:200;
-    letter-spacing:-1px; color:var(--text);
-    margin-bottom:8px;
-    text-shadow:0 0 60px rgba(10,132,255,0.35);
-  }
+    width:100%;
 
-  .boot-sub {
-    font-size:12px; font-weight:300;
-    letter-spacing:0.25em; color:rgba(10,132,255,0.6);
-    margin-bottom:64px;
-  }
+    height:100%;
 
-  .boot-btn {
-    padding:14px 48px;
-    background:rgba(10,132,255,0.08);
-    border:1px solid rgba(10,132,255,0.35);
-    border-radius:50px;
-    color:rgba(10,132,255,0.9);
-    font-size:11px; font-weight:400;
-    letter-spacing:0.25em; text-transform:uppercase;
-    cursor:pointer;
-    transition:all 0.3s ease;
-  }
-  .boot-btn:hover {
-    background:rgba(10,132,255,0.16);
-    border-color:rgba(10,132,255,0.6);
-    box-shadow:0 0 30px rgba(10,132,255,0.2);
-  }
-  .boot-btn:active { transform:scale(0.97); }
+}
 
-  /* ══════════════════════════
-     MAIN UI
-  ══════════════════════════ */
-  #app {
-    position:relative; z-index:10;
-    width:100%; height:100%;
-    display:flex; flex-direction:column;
-    align-items:center; justify-content:center;
-    gap:0;
-  }
+.interface{
 
-  /* ── Header ── */
-  .header {
-    position:absolute; top:0; left:0; right:0;
-    display:flex; justify-content:space-between; align-items:center;
-    padding:20px 28px;
-  }
+    position:absolute;
 
-  .header-logo {
-    font-size:10px; font-weight:400;
-    letter-spacing:0.35em; text-transform:uppercase;
-    color:rgba(255,255,255,0.2);
-  }
+    bottom:30px;
 
-  #clock {
-    font-size:13px; font-weight:300;
-    letter-spacing:0.06em;
-    color:rgba(255,255,255,0.3);
-  }
+    color:white;
 
-  /* ── Transcript (top) ── */
-  #transcript {
-    position:absolute; top:72px;
-    width:72%; text-align:center;
-    font-size:13px; font-weight:300;
-    color:rgba(255,255,255,0.35);
-    letter-spacing:0.02em;
-    font-style:italic;
-    line-height:1.5;
-    min-height:20px;
-    transition:color 0.4s ease;
-  }
-
-  /* ── Orb canvas ── */
-  #orb {
-    width:260px; height:260px;
-    cursor:pointer;
-    filter:drop-shadow(0 0 40px rgba(10,132,255,0.2));
-    transition:filter 0.5s ease;
-  }
-  #orb.ouvindo  { filter:drop-shadow(0 0 50px rgba(48,209,88,0.3)); }
-  #orb.falando  { filter:drop-shadow(0 0 50px rgba(10,132,255,0.4)); }
-  #orb.processando { filter:drop-shadow(0 0 40px rgba(255,159,10,0.3)); }
-
-  /* ── Status pill ── */
-  #status-pill {
-    margin-top:32px;
-    display:flex; align-items:center; gap:8px;
-    padding:8px 20px;
-    background:var(--glass);
-    border:1px solid var(--border);
-    border-radius:50px;
-    backdrop-filter:blur(20px);
-    transition:all 0.4s ease;
-  }
-
-  .status-dot {
-    width:6px; height:6px; border-radius:50%;
-    background:var(--text-faint);
-    transition:background 0.4s ease, box-shadow 0.4s ease;
-  }
-  .status-dot.active-standby     { background:var(--text-dim); }
-  .status-dot.active-ouvindo     { background:var(--green);  box-shadow:0 0 8px var(--green); animation:dotPulse 1s ease-in-out infinite; }
-  .status-dot.active-processando { background:var(--orange); box-shadow:0 0 8px var(--orange); }
-  .status-dot.active-falando     { background:var(--blue);   box-shadow:0 0 8px var(--blue);  animation:dotPulse 0.6s ease-in-out infinite; }
-
-  @keyframes dotPulse {
-    0%,100%{transform:scale(1);}
-    50%    {transform:scale(1.4);}
-  }
-
-  #status-text {
-    font-size:11px; font-weight:400;
-    letter-spacing:0.15em; text-transform:uppercase;
-    color:var(--text-dim);
-    transition:color 0.4s ease;
-  }
-
-  /* ── Response card ── */
-  #resposta-wrap {
-    position:absolute; bottom:0; left:0; right:0;
-    padding:0 24px 32px;
-    display:flex; flex-direction:column; align-items:center; gap:12px;
-  }
-
-  #resposta {
-    width:100%; max-width:480px;
-    background:var(--glass);
-    border:1px solid var(--border);
-    border-radius:18px;
-    backdrop-filter:blur(30px);
-    padding:16px 20px;
-    font-size:13px; font-weight:300;
-    line-height:1.65; letter-spacing:0.01em;
-    color:rgba(255,255,255,0.7);
     text-align:center;
-    min-height:0;
-    max-height:120px;
-    overflow-y:auto;
-    opacity:0;
-    transform:translateY(8px);
-    transition:opacity 0.4s ease, transform 0.4s ease;
-  }
-  #resposta.visible {
-    opacity:1; transform:translateY(0);
-  }
-  /* Top shine */
-  #resposta::before {
-    content:''; position:absolute; top:0; left:0; right:0; height:1px;
-    background:linear-gradient(90deg,transparent,rgba(255,255,255,0.12),transparent);
-    border-radius:18px 18px 0 0;
-  }
 
-  #play-btn {
-    display:none;
-    padding:10px 28px;
-    background:rgba(10,132,255,0.1);
-    border:1px solid rgba(10,132,255,0.3);
-    border-radius:50px;
-    color:rgba(10,132,255,0.8);
-    font-size:11px; font-weight:400;
-    letter-spacing:0.2em; text-transform:uppercase;
-    cursor:pointer;
-    transition:all 0.3s ease;
-  }
-  #play-btn:hover {
-    background:rgba(10,132,255,0.18);
-    border-color:rgba(10,132,255,0.5);
-  }
+    z-index:2;
 
-  /* ── Hint tap ── */
-  #hint {
-    position:absolute; bottom:180px;
-    font-size:10px; font-weight:300;
-    letter-spacing:0.2em; text-transform:uppercase;
-    color:var(--text-faint);
-    animation:hintFade 3s ease-in-out infinite;
-  }
-  @keyframes hintFade { 0%,100%{opacity:0.4;} 50%{opacity:1;} }
-  #hint.hide { display:none; }
+    opacity:.7;
+
+}
+
+.interface h1{
+
+    font-size:18px;
+
+    letter-spacing:4px;
+
+    text-shadow:
+
+    0 0 15px #00ffff,
+
+    0 0 30px #ff00ff;
+
+}
+
 </style>
+
 </head>
+
 <body>
 
-<!-- Background layers -->
-<canvas id="waves"></canvas>
-<div class="grid"></div>
-<div class="scan"></div>
-<div class="corner tl"></div>
-<div class="corner tr"></div>
-<div class="corner bl"></div>
-<div class="corner br"></div>
-<div id="pts"></div>
+<canvas id="sphere"></canvas>
 
-<!-- Boot overlay -->
-<div id="overlay">
-  <div class="boot-logo">BlueGlass OS · v1.0</div>
-  <div class="boot-name">Jarvis</div>
-  <div class="boot-sub">Assistente de Inteligência Artificial</div>
-  <button class="boot-btn" onclick="iniciar()">Inicializar Sistema</button>
-</div>
+<div class="interface">
 
-<!-- Main UI -->
-<div id="app">
-  <div class="header">
-    <div class="header-logo">BlueGlass · Jarvis</div>
-    <div id="clock">--:--</div>
-  </div>
+<h1>LIQUID HOLOGRAM AI</h1>
 
-  <div id="transcript"></div>
-
-  <canvas id="orb" width="260" height="260"></canvas>
-
-  <div id="status-pill">
-    <div class="status-dot active-standby" id="dot"></div>
-    <div id="status-text">Aguardando</div>
-  </div>
-
-  <div id="hint">toque para falar · diga "jarvis" para ativar</div>
-
-  <div id="resposta-wrap">
-    <div id="resposta"></div>
-    <button id="play-btn" onclick="tocarAudioPendente()">▶ Ouvir resposta</button>
-  </div>
 </div>
 
 <script>
-/* ════════════════════════════════
-   LIQUID WAVE BACKGROUND
-════════════════════════════════ */
-const wvCv = document.getElementById('waves');
-const wvCx = wvCv.getContext('2d');
-function rsz(){ wvCv.width=innerWidth; wvCv.height=innerHeight; }
-rsz(); addEventListener('resize', rsz);
 
-const WV = [
-  {ry:.25,a:18,f:.007,sp:.008,ph:0,   op:.05},
-  {ry:.45,a:14,f:.011,sp:.012,ph:2.1, op:.045},
-  {ry:.65,a:17,f:.008,sp:.009,ph:4.2, op:.04},
-  {ry:.82,a:12,f:.013,sp:.015,ph:1.0, op:.035},
-];
-function drawWaves(){
-  wvCx.clearRect(0,0,wvCv.width,wvCv.height);
-  WV.forEach(w=>{
-    w.ph+=w.sp;
-    const by=wvCv.height*w.ry;
-    wvCx.beginPath(); wvCx.moveTo(0,by);
-    for(let x=0;x<=wvCv.width;x+=3){
-      const y=by+Math.sin(x*w.f+w.ph)*w.a+Math.sin(x*w.f*1.7+w.ph*.6)*(w.a*.35);
-      wvCx.lineTo(x,y);
-    }
-    wvCx.lineTo(wvCv.width,wvCv.height); wvCx.lineTo(0,wvCv.height); wvCx.closePath();
-    const g=wvCx.createLinearGradient(0,by-w.a,0,by+w.a*2);
-    g.addColorStop(0,`rgba(255,255,255,${w.op})`);
-    g.addColorStop(.5,`rgba(10,132,255,${w.op*.5})`);
-    g.addColorStop(1,'rgba(0,0,0,0)');
-    wvCx.fillStyle=g; wvCx.fill();
-    wvCx.beginPath(); wvCx.moveTo(0,by);
-    for(let x=0;x<=wvCv.width;x+=3){
-      const y=by+Math.sin(x*w.f+w.ph)*w.a+Math.sin(x*w.f*1.7+w.ph*.6)*(w.a*.35);
-      wvCx.lineTo(x,y);
-    }
-    wvCx.strokeStyle=`rgba(180,210,255,${w.op*1.8})`; wvCx.lineWidth=.8; wvCx.stroke();
-  });
-  requestAnimationFrame(drawWaves);
-}
-requestAnimationFrame(drawWaves);
+const canvas = document.getElementById("sphere");
 
-/* ════════════════════════════════
-   PARTICLES
-════════════════════════════════ */
-const ptCont=document.getElementById('pts');
-const ptPalette=['rgba(255,255,255,0.6)','rgba(255,255,255,0.4)','rgba(10,132,255,0.7)','rgba(100,180,255,0.5)','rgba(255,255,255,0.25)'];
-function mkPt(){
-  const el=document.createElement('div'); el.className='pt';
-  const s=Math.random()*3+.8, c=ptPalette[Math.floor(Math.random()*ptPalette.length)];
-  el.style.cssText=`width:${s}px;height:${s}px;left:${Math.random()*100}%;background:${c};box-shadow:0 0 ${s*3}px ${c};animation-duration:${Math.random()*10+7}s;animation-delay:${Math.random()*4}s;`;
-  ptCont.appendChild(el); setTimeout(()=>el.remove(),18000);
-}
-setInterval(mkPt,400);
+const ctx = canvas.getContext("2d");
 
-/* ════════════════════════════════
-   CLOCK
-════════════════════════════════ */
-function tick(){
-  const n=new Date();
-  document.getElementById('clock').textContent=
-    String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
-}
-tick(); setInterval(tick,1000);
+let w,h;
 
-/* ════════════════════════════════
-   ORB CANVAS
-════════════════════════════════ */
-const orb=document.getElementById('orb');
-const oc=orb.getContext('2d');
-const OW=260, OH=260, OCX=130, OCY=130, OR=82;
+let t=0;
 
-let orbT=0, orbAmp=2, orbTargetAmp=2, orbModo='standby';
+function resize(){
 
-// Color palettes per state — subtle, glass-like
-const ORB_COLORS={
-  standby:    {inner:'rgba(15,40,120,0.85)',  mid:'rgba(10,80,200,0.7)',   outer:'rgba(10,132,255,0.5)',  stroke:'rgba(100,180,255,0.6)'},
-  ouvindo:    {inner:'rgba(10,80,40,0.85)',   mid:'rgba(20,150,70,0.7)',   outer:'rgba(48,209,88,0.5)',   stroke:'rgba(100,220,140,0.7)'},
-  processando:{inner:'rgba(100,60,0,0.85)',   mid:'rgba(180,110,0,0.7)',   outer:'rgba(255,159,10,0.5)',  stroke:'rgba(255,190,80,0.7)'},
-  falando:    {inner:'rgba(0,50,140,0.85)',   mid:'rgba(0,100,220,0.7)',   outer:'rgba(10,132,255,0.6)',  stroke:'rgba(120,200,255,0.8)'},
-};
+    w=canvas.width=window.innerWidth;
 
-let orbCurInner='rgba(15,40,120,0.85)', orbCurMid='rgba(10,80,200,0.7)', orbCurOuter='rgba(10,132,255,0.5)', orbCurStroke='rgba(100,180,255,0.6)';
+    h=canvas.height=window.innerHeight;
 
-function lerpColor(c1,c2,f){
-  const p=s=>{const m=s.match(/[\d.]+/g).map(Number);return m;};
-  const a=p(c1),b=p(c2);
-  const r=a.map((v,i)=>v+(b[i]-v)*f);
-  if(c1.startsWith('rgba')) return `rgba(${Math.round(r[0])},${Math.round(r[1])},${Math.round(r[2])},${r[3].toFixed(2)})`;
-  return `rgb(${Math.round(r[0])},${Math.round(r[1])},${Math.round(r[2])})`;
 }
 
-function drawOrb(){
-  oc.clearRect(0,0,OW,OH);
-  const tgt=ORB_COLORS[orbModo]||ORB_COLORS.standby;
-  orbCurInner=lerpColor(orbCurInner,tgt.inner,.04);
-  orbCurMid  =lerpColor(orbCurMid,  tgt.mid,  .04);
-  orbCurOuter=lerpColor(orbCurOuter,tgt.outer, .04);
-  orbCurStroke=lerpColor(orbCurStroke,tgt.stroke,.04);
+resize();
 
-  // Outer glow rings
-  for(let i=5;i>0;i--){
-    const gr=OR*1.6*(i/5)+orbAmp*.5;
-    oc.beginPath(); oc.arc(OCX,OCY,gr,0,Math.PI*2);
-    const ga=oc.createRadialGradient(OCX,OCY,0,OCX,OCY,gr);
-    ga.addColorStop(0,'rgba(0,0,0,0)');
-    ga.addColorStop(.7,'rgba(0,0,0,0)');
-    ga.addColorStop(1,orbCurOuter.replace(/[\d.]+\)/,`${.04*i})`));
-    oc.fillStyle=ga; oc.fill();
-  }
+window.onresize=resize;
 
-  // Main blob
-  const N=220; oc.beginPath();
-  for(let i=0;i<=N;i++){
-    const th=(2*Math.PI*i)/N;
-    const wave=
-      Math.sin(2*th+orbT)       *orbAmp*.30+
-      Math.sin(3*th-orbT*1.3)   *orbAmp*.22+
-      Math.sin(5*th+orbT*.9)    *orbAmp*.14+
-      Math.sin(7*th-orbT*1.1)   *orbAmp*.09+
-      Math.sin(th*1.5+orbT*.5)  *orbAmp*.14+
-      Math.sin(11*th+orbT*1.7)  *orbAmp*.05;
-    const rad=OR+wave;
-    const x=OCX+rad*Math.cos(th), y=OCY+rad*Math.sin(th);
-    i===0?oc.moveTo(x,y):oc.lineTo(x,y);
-  }
-  oc.closePath();
+let particles=[];
 
-  // Glass-like gradient fill
-  const gf=oc.createRadialGradient(OCX-OR*.2,OCY-OR*.35,OR*.05,OCX,OCY,OR+orbAmp);
-  gf.addColorStop(0,  orbCurOuter);
-  gf.addColorStop(.45,orbCurMid);
-  gf.addColorStop(1,  orbCurInner);
-  oc.fillStyle=gf; oc.fill();
+for(let i=0;i<120;i++){
 
-  // Stroke
-  oc.strokeStyle=orbCurStroke; oc.lineWidth=1.2; oc.stroke();
+    particles.push({
 
-  // Glass highlight — top left shine
-  oc.beginPath(); oc.arc(OCX-OR*.28,OCY-OR*.42,OR*.10,0,Math.PI*2);
-  const gh=oc.createRadialGradient(OCX-OR*.28,OCY-OR*.42,0,OCX-OR*.28,OCY-OR*.42,OR*.10);
-  gh.addColorStop(0,'rgba(255,255,255,0.22)'); gh.addColorStop(1,'rgba(255,255,255,0)');
-  oc.fillStyle=gh; oc.fill();
+        a:Math.random()*Math.PI*2,
 
-  // Secondary smaller highlight
-  oc.beginPath(); oc.arc(OCX+OR*.3,OCY-OR*.1,OR*.05,0,Math.PI*2);
-  const gh2=oc.createRadialGradient(OCX+OR*.3,OCY-OR*.1,0,OCX+OR*.3,OCY-OR*.1,OR*.05);
-  gh2.addColorStop(0,'rgba(255,255,255,0.12)'); gh2.addColorStop(1,'rgba(255,255,255,0)');
-  oc.fillStyle=gh2; oc.fill();
+        r:120+Math.random()*100,
 
-  // Speed & amplitude per mode
-  const spd={standby:.007,ouvindo:.08,processando:.14,falando:.18};
-  const tgt2={standby:2,ouvindo:18,processando:28,falando:42};
-  orbT+=spd[orbModo]||.007;
-  orbTargetAmp=tgt2[orbModo]||2;
-  orbAmp+=(orbTargetAmp-orbAmp)*.08;
+        s:0.005+Math.random()*0.02
 
-  requestAnimationFrame(drawOrb);
-}
-drawOrb();
-
-/* ════════════════════════════════
-   STATE MACHINE
-════════════════════════════════ */
-const dotEl       = document.getElementById('dot');
-const statusTextEl= document.getElementById('status-text');
-const transcriptEl= document.getElementById('transcript');
-const respostaEl  = document.getElementById('resposta');
-const playBtn     = document.getElementById('play-btn');
-const hintEl      = document.getElementById('hint');
-
-const ESTADOS={
-  standby:    {dot:'active-standby', txt:'Aguardando',    statusColor:'rgba(255,255,255,0.35)'},
-  ouvindo:    {dot:'active-ouvindo', txt:'Ouvindo',       statusColor:'rgba(48,209,88,0.8)'},
-  processando:{dot:'active-processando',txt:'Processando',statusColor:'rgba(255,159,10,0.8)'},
-  falando:    {dot:'active-falando', txt:'Falando',       statusColor:'rgba(10,132,255,0.9)'},
-};
-
-function setModo(m){
-  orbModo=m;
-  orb.className=m;
-  const e=ESTADOS[m]||ESTADOS.standby;
-  dotEl.className='status-dot '+e.dot;
-  statusTextEl.textContent=e.txt;
-  statusTextEl.style.color=e.statusColor;
-  if(m==='standby') hintEl.classList.remove('hide');
-  else hintEl.classList.add('hide');
-}
-
-function mostrarResposta(txt){
-  respostaEl.textContent=txt;
-  respostaEl.classList.add('visible');
-}
-function limparResposta(){
-  respostaEl.classList.remove('visible');
-  setTimeout(()=>{ respostaEl.textContent=''; },400);
-}
-
-/* ════════════════════════════════
-   AUDIO
-════════════════════════════════ */
-let audioCtx=null, audioPendente=null, ocupado=false;
-const USER_ID = (()=>{
-  // Pega user_id de query string ?u=xxx ou usa fallback
-  const p=new URLSearchParams(location.search);
-  return p.get('u')||'jonas';
-})();
-
-async function tocarAudio(b64){
-  try{
-    if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-    if(audioCtx.state==='suspended') await audioCtx.resume();
-    const bin=atob(b64), bytes=new Uint8Array(bin.length);
-    for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
-    const buf=await audioCtx.decodeAudioData(bytes.buffer);
-    const src=audioCtx.createBufferSource();
-    src.buffer=buf; src.connect(audioCtx.destination);
-    src.onended=()=>{
-      setModo('standby'); limparResposta();
-      transcriptEl.textContent='';
-      playBtn.style.display='none'; audioPendente=null; ocupado=false;
-      escutarWake();
-    };
-    src.start(0); playBtn.style.display='none'; return true;
-  }catch(e){ ocupado=false; return false; }
-}
-function tocarAudioPendente(){ if(audioPendente) tocarAudio(audioPendente); }
-
-/* ════════════════════════════════
-   SPEECH RECOGNITION
-════════════════════════════════ */
-const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-let recAtivo=null, ativo=false, pauseTimer=null, transcriptAcum='';
-
-// Wake words — mais específicas para evitar falsos positivos
-const WAKE_WORDS=['jarvis','jarves','jarvi','jarviz'];
-
-function iniciar(){
-  audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-  const ov=document.getElementById('overlay');
-  ov.classList.add('hide');
-  setTimeout(()=>ov.style.display='none',900);
-  ativo=true; escutarWake();
-}
-
-function pararRec(){
-  if(recAtivo){try{recAtivo.stop();}catch(e){} recAtivo=null;}
-  clearTimeout(pauseTimer);
-}
-
-function escutarWake(){
-  if(!SR||!ativo||ocupado) return;
-  pararRec(); setModo('standby');
-  const rec=new SR();
-  rec.lang='pt-BR'; rec.continuous=false; rec.interimResults=false; rec.maxAlternatives=3;
-  recAtivo=rec;
-  rec.onresult=(e)=>{
-    for(let r=0;r<e.results.length;r++){
-      for(let a=0;a<e.results[r].length;a++){
-        const txt=e.results[r][a].transcript.toLowerCase().trim();
-        if(WAKE_WORDS.some(w=>txt.includes(w))){
-          recAtivo=null; ouvirComando(); return;
-        }
-      }
-    }
-    recAtivo=null; escutarWake();
-  };
-  rec.onerror=()=>{ recAtivo=null; if(ativo&&!ocupado) setTimeout(escutarWake,300); };
-  rec.onend=()=>{ if(recAtivo===rec) recAtivo=null; if(ativo&&!ocupado&&orbModo==='standby') setTimeout(escutarWake,100); };
-  try{ rec.start(); }catch(e){ recAtivo=null; setTimeout(escutarWake,500); }
-}
-
-function ouvirComando(){
-  if(ocupado) return;
-  pararRec(); setModo('ouvindo');
-  transcriptAcum=''; transcriptEl.textContent='';
-  const rec=new SR();
-  rec.lang='pt-BR'; rec.continuous=true; rec.interimResults=true; rec.maxAlternatives=1;
-  recAtivo=rec;
-  rec.onresult=(e)=>{
-    let interim='', final='';
-    for(let i=e.resultIndex;i<e.results.length;i++){
-      const txt=e.results[i][0].transcript;
-      if(e.results[i].isFinal) final+=txt; else interim+=txt;
-    }
-    if(final) transcriptAcum+=final;
-    transcriptEl.textContent=transcriptAcum||interim;
-    clearTimeout(pauseTimer);
-    if(transcriptAcum||final){
-      pauseTimer=setTimeout(()=>{
-        const p=transcriptAcum.trim();
-        if(p&&!ocupado){ try{rec.stop();}catch(e){} recAtivo=null; processarPergunta(p); }
-      },1600);
-    }
-  };
-  rec.onerror=()=>{
-    clearTimeout(pauseTimer); recAtivo=null;
-    const p=transcriptAcum.trim();
-    if(p&&!ocupado) processarPergunta(p);
-    else if(!ocupado){ setModo('standby'); transcriptEl.textContent=''; setTimeout(escutarWake,200); }
-  };
-  rec.onend=()=>{
-    clearTimeout(pauseTimer);
-    if(recAtivo===rec) recAtivo=null;
-    if(orbModo==='ouvindo'&&!ocupado){
-      const p=transcriptAcum.trim();
-      if(p) processarPergunta(p);
-      else{ setModo('standby'); transcriptEl.textContent=''; setTimeout(escutarWake,200); }
-    }
-  };
-  try{ rec.start(); }catch(e){ recAtivo=null; setModo('standby'); setTimeout(escutarWake,500); }
-}
-
-/* ════════════════════════════════
-   API
-════════════════════════════════ */
-async function processarPergunta(pergunta){
-  if(ocupado) return;
-  ocupado=true; pararRec(); setModo('processando');
-  transcriptEl.textContent=pergunta; limparResposta();
-
-  // Timeout de 20s para não travar
-  const controller=new AbortController();
-  const timeout=setTimeout(()=>controller.abort(),20000);
-
-  try{
-    const res=await fetch('/perguntar',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({pergunta, user_id:USER_ID}),
-      signal:controller.signal
     });
-    clearTimeout(timeout);
-    if(!res.ok) throw new Error('API error '+res.status);
-    const dados=await res.json();
-    if(dados.erro) throw new Error(dados.erro);
 
-    mostrarResposta(dados.resposta);
-    setModo('falando');
-    audioPendente=dados.audio;
-    const ok=await tocarAudio(dados.audio);
-    if(!ok){ playBtn.style.display='block'; ocupado=false; }
-  }catch(err){
-    clearTimeout(timeout);
-    ocupado=false; setModo('standby');
-    transcriptEl.textContent='';
-    if(err.name!=='AbortError') console.error('Jarvis error:',err);
-    setTimeout(escutarWake,300);
-  }
 }
 
-/* ── Tap orb to speak ── */
-orb.addEventListener('click',()=>{
-  if(ativo&&orbModo==='standby'&&!ocupado) ouvirComando();
-});
+function draw(){
+
+ctx.clearRect(0,0,w,h);
+
+let cx=w/2;
+
+let cy=h/2;
+
+let radius=170;
+
+// aura holográfica
+
+let glow=ctx.createRadialGradient(
+
+cx,cy,30,
+
+cx,cy,260
+
+);
+
+glow.addColorStop(0,"rgba(0,255,255,.5)");
+
+glow.addColorStop(.5,"rgba(255,0,255,.25)");
+
+glow.addColorStop(1,"transparent");
+
+ctx.fillStyle=glow;
+
+ctx.beginPath();
+
+ctx.arc(cx,cy,260,0,Math.PI*2);
+
+ctx.fill();
+
+// esfera líquida
+
+let sphere=ctx.createRadialGradient(
+
+cx-50,cy-60,20,
+
+cx,cy,radius
+
+);
+
+sphere.addColorStop(0,"#ffffff");
+
+sphere.addColorStop(.25,"#00ffff");
+
+sphere.addColorStop(.7,"#7b00ff");
+
+sphere.addColorStop(1,"#ff008c");
+
+ctx.save();
+
+ctx.translate(cx,cy);
+
+ctx.rotate(t*0.3);
+
+ctx.beginPath();
+
+for(let i=0;i<=360;i++){
+
+let angle=i*Math.PI/180;
+
+let wave=
+
+Math.sin(angle*8+t*3)*12+
+
+Math.sin(angle*14-t*2)*6;
+
+let r=radius+wave;
+
+let x=Math.cos(angle)*r;
+
+let y=Math.sin(angle)*r;
+
+if(i==0)
+
+ctx.moveTo(x,y);
+
+else
+
+ctx.lineTo(x,y);
+
+}
+
+ctx.closePath();
+
+ctx.fillStyle=sphere;
+
+ctx.shadowBlur=40;
+
+ctx.shadowColor="#ff00ff";
+
+ctx.fill();
+
+ctx.restore();
+
+// gotas líquidas
+
+for(let p of particles){
+
+p.a+=p.s;
+
+let x=
+
+cx+
+
+Math.cos(p.a)*p.r+
+
+Math.sin(t*2+p.a)*15;
+
+let y=
+
+cy+
+
+Math.sin(p.a)*p.r+
+
+Math.cos(t*2+p.a)*15;
+
+let size=4+Math.sin(t*5+p.a)*3;
+
+let g=ctx.createRadialGradient(
+
+x,y,0,
+
+x,y,size*3
+
+);
+
+g.addColorStop(0,"#ffffff");
+
+g.addColorStop(.4,"#00ffff");
+
+g.addColorStop(1,"transparent");
+
+ctx.fillStyle=g;
+
+ctx.beginPath();
+
+ctx.arc(x,y,size,0,Math.PI*2);
+
+ctx.fill();
+
+}
+
+// brilho interno
+
+ctx.beginPath();
+
+ctx.arc(cx-40,cy-50,45,0,Math.PI*2);
+
+ctx.fillStyle="rgba(255,255,255,.25)";
+
+ctx.fill();
+
+t+=0.01;
+
+requestAnimationFrame(draw);
+
+}
+
+draw();
+
 </script>
+
 </body>
+
 </html>
-HTMLEOF
-echo "ok"
