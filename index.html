@@ -7,676 +7,505 @@ cat > /mnt/user-data/outputs/index.html << 'HTMLEOF'
 <title>BlueGlass · Jarvis</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500&display=swap');
-
   * { margin:0; padding:0; box-sizing:border-box; -webkit-font-smoothing:antialiased; }
-
   :root {
-    --blue:      #0a84ff;
-    --blue-dim:  rgba(10,132,255,0.25);
-    --blue-glow: rgba(10,132,255,0.15);
-    --green:     #30d158;
-    --orange:    #ff9f0a;
-    --text:      rgba(255,255,255,0.88);
-    --text-dim:  rgba(255,255,255,0.4);
-    --text-faint:rgba(255,255,255,0.18);
-    --glass:     rgba(255,255,255,0.06);
-    --border:    rgba(255,255,255,0.12);
+    --blue:rgba(10,132,255,1); --blue-dim:rgba(10,132,255,0.25);
+    --green:rgba(48,209,88,1); --orange:rgba(255,159,10,1); --red:rgba(255,59,48,1);
+    --text:rgba(255,255,255,0.88); --text-dim:rgba(255,255,255,0.4); --text-faint:rgba(255,255,255,0.15);
+    --glass:rgba(255,255,255,0.06); --border:rgba(255,255,255,0.11);
   }
-
-  html, body {
-    width:100%; height:100%;
-    overflow:hidden;
-    font-family:'Inter', -apple-system, sans-serif;
-    background:
-      radial-gradient(ellipse 80% 60% at 20% 10%, rgba(10,132,255,0.10) 0%, transparent 65%),
-      radial-gradient(ellipse 60% 50% at 80% 85%, rgba(10,60,200,0.08) 0%, transparent 65%),
-      linear-gradient(160deg, rgba(6,12,36,0.96) 0%, rgba(3,6,20,0.98) 100%);
-    color: var(--text);
-    user-select:none; -webkit-user-select:none;
+  html,body { width:100%;height:100%;overflow:hidden;
+    font-family:'Inter',-apple-system,sans-serif; color:var(--text); user-select:none;
+    background:radial-gradient(ellipse 80% 60% at 20% 10%,rgba(10,132,255,0.10) 0%,transparent 65%),
+               radial-gradient(ellipse 60% 50% at 80% 85%,rgba(10,60,200,0.08) 0%,transparent 65%),
+               linear-gradient(160deg,rgba(6,12,36,0.97) 0%,rgba(3,6,20,0.99) 100%);
   }
-
-  /* ── Liquid wave canvas (background) ── */
-  #waves {
-    position:fixed; inset:0; z-index:0; pointer-events:none; opacity:0.4;
-  }
-
-  /* ── Fine grid ── */
-  .grid {
-    position:fixed; inset:0; z-index:0; pointer-events:none;
-    background-image:
-      linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px);
-    background-size:44px 44px;
-  }
-
-  /* ── Scan line ── */
-  .scan {
-    position:fixed; left:0; right:0; height:1px; z-index:1; pointer-events:none;
+  #waves{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.4;}
+  .grid{position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(255,255,255,0.02) 1px,transparent 1px);
+    background-size:44px 44px;}
+  .scan{position:fixed;left:0;right:0;height:1px;z-index:1;pointer-events:none;
     background:linear-gradient(90deg,transparent,rgba(10,132,255,0.4),transparent);
-    animation:scanMove 9s linear infinite; opacity:0.4;
-  }
-  @keyframes scanMove { from{top:-1px} to{top:100vh} }
-
-  /* ── Corner marks ── */
-  .corner { position:fixed; width:18px; height:18px; z-index:2; pointer-events:none; opacity:0.25; }
-  .corner.tl{top:0;left:0;  border-top:1px solid #fff;border-left:1px solid #fff;}
-  .corner.tr{top:0;right:0; border-top:1px solid #fff;border-right:1px solid #fff;}
-  .corner.bl{bottom:0;left:0; border-bottom:1px solid #fff;border-left:1px solid #fff;}
+    animation:scanMove 9s linear infinite;opacity:0.4;}
+  @keyframes scanMove{from{top:-1px}to{top:100vh}}
+  .corner{position:fixed;width:18px;height:18px;z-index:2;pointer-events:none;opacity:0.22;}
+  .corner.tl{top:0;left:0;border-top:1px solid #fff;border-left:1px solid #fff;}
+  .corner.tr{top:0;right:0;border-top:1px solid #fff;border-right:1px solid #fff;}
+  .corner.bl{bottom:0;left:0;border-bottom:1px solid #fff;border-left:1px solid #fff;}
   .corner.br{bottom:0;right:0;border-bottom:1px solid #fff;border-right:1px solid #fff;}
+  #pts{position:fixed;inset:0;z-index:0;pointer-events:none;}
+  .pt{position:absolute;border-radius:50%;animation:ptUp linear infinite;opacity:0;}
+  @keyframes ptUp{0%{transform:translateY(105vh) scale(0);opacity:0;}8%{opacity:1;}92%{opacity:0.5;}100%{transform:translateY(-8vh) scale(1);opacity:0;}}
 
-  /* ── Particles ── */
-  #pts { position:fixed; inset:0; z-index:0; pointer-events:none; }
-  .pt {
-    position:absolute; border-radius:50%;
-    animation:ptUp linear infinite; opacity:0;
-  }
-  @keyframes ptUp {
-    0%  {transform:translateY(105vh) scale(0);opacity:0;}
-    8%  {opacity:1;}
-    92% {opacity:0.5;}
-    100%{transform:translateY(-8vh) scale(1);opacity:0;}
-  }
+  /* BOOT */
+  #overlay{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:rgba(3,6,20,0.97);transition:opacity 0.8s ease;}
+  #overlay.hide{opacity:0;pointer-events:none;}
+  .boot-logo{font-size:10px;font-weight:300;letter-spacing:0.55em;text-transform:uppercase;color:rgba(255,255,255,0.2);margin-bottom:48px;}
+  .boot-name{font-size:52px;font-weight:200;letter-spacing:-1px;color:var(--text);margin-bottom:8px;text-shadow:0 0 60px rgba(10,132,255,0.35);}
+  .boot-sub{font-size:12px;font-weight:300;letter-spacing:0.25em;color:rgba(10,132,255,0.6);margin-bottom:64px;}
+  .boot-btn{padding:14px 48px;background:rgba(10,132,255,0.08);border:1px solid rgba(10,132,255,0.35);border-radius:50px;
+    color:rgba(10,132,255,0.9);font-size:11px;font-weight:400;letter-spacing:0.25em;text-transform:uppercase;cursor:pointer;transition:all 0.3s ease;}
+  .boot-btn:hover{background:rgba(10,132,255,0.16);border-color:rgba(10,132,255,0.6);box-shadow:0 0 30px rgba(10,132,255,0.2);}
 
-  /* ══════════════════════════
-     OVERLAY DE BOOT
-  ══════════════════════════ */
-  #overlay {
-    position:fixed; inset:0; z-index:200;
-    display:flex; flex-direction:column;
-    align-items:center; justify-content:center; gap:0;
-    background:rgba(3,6,20,0.97);
-    transition:opacity 0.8s ease;
-  }
-  #overlay.hide { opacity:0; pointer-events:none; }
+  /* APP */
+  #app{position:relative;z-index:10;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .header{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:20px 28px;}
+  .header-logo{font-size:10px;font-weight:400;letter-spacing:0.35em;text-transform:uppercase;color:rgba(255,255,255,0.18);}
+  #clock{font-size:13px;font-weight:300;letter-spacing:0.06em;color:rgba(255,255,255,0.28);}
 
-  .boot-logo {
-    font-size:11px; font-weight:300;
-    letter-spacing:0.55em; text-transform:uppercase;
-    color:rgba(255,255,255,0.25); margin-bottom:48px;
-  }
+  /* SECURITY BADGE */
+  #sec-badge{position:absolute;top:18px;left:50%;transform:translateX(-50%);
+    display:flex;align-items:center;gap:6px;padding:5px 14px;
+    background:rgba(48,209,88,0.08);border:1px solid rgba(48,209,88,0.2);border-radius:50px;
+    font-size:9px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:rgba(48,209,88,0.6);
+    transition:all 0.4s ease;}
+  #sec-badge.locked{background:rgba(255,59,48,0.12);border-color:rgba(255,59,48,0.3);color:rgba(255,59,48,0.8);}
+  #sec-badge.locked .sec-dot{background:var(--red);box-shadow:0 0 8px var(--red);}
+  .sec-dot{width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);transition:all 0.4s;}
 
-  .boot-name {
-    font-size:52px; font-weight:200;
-    letter-spacing:-1px; color:var(--text);
-    margin-bottom:8px;
-    text-shadow:0 0 60px rgba(10,132,255,0.35);
-  }
+  #transcript{position:absolute;top:72px;width:75%;text-align:center;font-size:13px;font-weight:300;
+    color:rgba(255,255,255,0.32);letter-spacing:0.02em;font-style:italic;line-height:1.5;min-height:20px;transition:color 0.4s ease;}
 
-  .boot-sub {
-    font-size:12px; font-weight:300;
-    letter-spacing:0.25em; color:rgba(10,132,255,0.6);
-    margin-bottom:64px;
-  }
+  #orb{width:260px;height:260px;cursor:pointer;
+    filter:drop-shadow(0 0 40px rgba(10,132,255,0.2));transition:filter 0.5s ease;}
 
-  .boot-btn {
-    padding:14px 48px;
-    background:rgba(10,132,255,0.08);
-    border:1px solid rgba(10,132,255,0.35);
-    border-radius:50px;
-    color:rgba(10,132,255,0.9);
-    font-size:11px; font-weight:400;
-    letter-spacing:0.25em; text-transform:uppercase;
-    cursor:pointer;
-    transition:all 0.3s ease;
-  }
-  .boot-btn:hover {
-    background:rgba(10,132,255,0.16);
-    border-color:rgba(10,132,255,0.6);
-    box-shadow:0 0 30px rgba(10,132,255,0.2);
-  }
-  .boot-btn:active { transform:scale(0.97); }
+  #status-pill{margin-top:28px;display:flex;align-items:center;gap:8px;padding:8px 20px;
+    background:var(--glass);border:1px solid var(--border);border-radius:50px;backdrop-filter:blur(20px);transition:all 0.4s ease;}
+  .status-dot{width:6px;height:6px;border-radius:50%;background:var(--text-faint);transition:background 0.4s,box-shadow 0.4s;}
+  .s-standby{background:rgba(255,255,255,0.25);}
+  .s-ouvindo{background:var(--green);box-shadow:0 0 8px var(--green);animation:dp 1s ease-in-out infinite;}
+  .s-processando{background:var(--orange);box-shadow:0 0 8px var(--orange);}
+  .s-falando{background:var(--blue);box-shadow:0 0 8px var(--blue);animation:dp 0.6s ease-in-out infinite;}
+  .s-seguro{background:var(--red);box-shadow:0 0 10px var(--red);animation:dp 1.5s ease-in-out infinite;}
+  .s-escrevendo{background:#bf5af2;box-shadow:0 0 8px #bf5af2;}
+  @keyframes dp{0%,100%{transform:scale(1);}50%{transform:scale(1.5);}}
+  #status-text{font-size:11px;font-weight:400;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);transition:color 0.4s;}
 
-  /* ══════════════════════════
-     MAIN UI
-  ══════════════════════════ */
-  #app {
-    position:relative; z-index:10;
-    width:100%; height:100%;
-    display:flex; flex-direction:column;
-    align-items:center; justify-content:center;
-    gap:0;
-  }
+  /* TEXT PANEL */
+  #text-panel{position:absolute;bottom:0;left:0;right:0;padding:0 20px 28px;display:flex;flex-direction:column;align-items:center;gap:10px;}
+  #text-area{width:100%;max-width:500px;background:var(--glass);border:1px solid var(--border);border-radius:18px;
+    backdrop-filter:blur(30px);padding:16px 20px;font-size:13px;font-weight:300;line-height:1.65;
+    color:rgba(255,255,255,0.75);text-align:left;min-height:60px;max-height:160px;overflow-y:auto;
+    opacity:0;transform:translateY(10px);transition:opacity 0.4s,transform 0.4s;white-space:pre-wrap;
+    font-family:'Inter',sans-serif;}
+  #text-area.visible{opacity:1;transform:translateY(0);}
+  #text-area::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent);border-radius:18px 18px 0 0;}
+  #text-controls{display:none;gap:8px;}
+  #text-controls.visible{display:flex;}
+  .tc-btn{padding:8px 20px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);
+    border-radius:50px;color:rgba(255,255,255,0.5);font-size:10px;font-weight:400;
+    letter-spacing:0.15em;text-transform:uppercase;cursor:pointer;transition:all 0.3s;}
+  .tc-btn:hover{background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.8);}
 
-  /* ── Header ── */
-  .header {
-    position:absolute; top:0; left:0; right:0;
-    display:flex; justify-content:space-between; align-items:center;
-    padding:20px 28px;
-  }
-
-  .header-logo {
-    font-size:10px; font-weight:400;
-    letter-spacing:0.35em; text-transform:uppercase;
-    color:rgba(255,255,255,0.2);
-  }
-
-  #clock {
-    font-size:13px; font-weight:300;
-    letter-spacing:0.06em;
-    color:rgba(255,255,255,0.3);
-  }
-
-  /* ── Transcript (top) ── */
-  #transcript {
-    position:absolute; top:72px;
-    width:72%; text-align:center;
-    font-size:13px; font-weight:300;
-    color:rgba(255,255,255,0.35);
-    letter-spacing:0.02em;
-    font-style:italic;
-    line-height:1.5;
-    min-height:20px;
-    transition:color 0.4s ease;
-  }
-
-  /* ── Orb canvas ── */
-  #orb {
-    width:260px; height:260px;
-    cursor:pointer;
-    filter:drop-shadow(0 0 40px rgba(10,132,255,0.2));
-    transition:filter 0.5s ease;
-  }
-  #orb.ouvindo  { filter:drop-shadow(0 0 50px rgba(48,209,88,0.3)); }
-  #orb.falando  { filter:drop-shadow(0 0 50px rgba(10,132,255,0.4)); }
-  #orb.processando { filter:drop-shadow(0 0 40px rgba(255,159,10,0.3)); }
-
-  /* ── Status pill ── */
-  #status-pill {
-    margin-top:32px;
-    display:flex; align-items:center; gap:8px;
-    padding:8px 20px;
-    background:var(--glass);
-    border:1px solid var(--border);
-    border-radius:50px;
-    backdrop-filter:blur(20px);
-    transition:all 0.4s ease;
-  }
-
-  .status-dot {
-    width:6px; height:6px; border-radius:50%;
-    background:var(--text-faint);
-    transition:background 0.4s ease, box-shadow 0.4s ease;
-  }
-  .status-dot.active-standby     { background:var(--text-dim); }
-  .status-dot.active-ouvindo     { background:var(--green);  box-shadow:0 0 8px var(--green); animation:dotPulse 1s ease-in-out infinite; }
-  .status-dot.active-processando { background:var(--orange); box-shadow:0 0 8px var(--orange); }
-  .status-dot.active-falando     { background:var(--blue);   box-shadow:0 0 8px var(--blue);  animation:dotPulse 0.6s ease-in-out infinite; }
-
-  @keyframes dotPulse {
-    0%,100%{transform:scale(1);}
-    50%    {transform:scale(1.4);}
-  }
-
-  #status-text {
-    font-size:11px; font-weight:400;
-    letter-spacing:0.15em; text-transform:uppercase;
-    color:var(--text-dim);
-    transition:color 0.4s ease;
-  }
-
-  /* ── Response card ── */
-  #resposta-wrap {
-    position:absolute; bottom:0; left:0; right:0;
-    padding:0 24px 32px;
-    display:flex; flex-direction:column; align-items:center; gap:12px;
-  }
-
-  #resposta {
-    width:100%; max-width:480px;
-    background:var(--glass);
-    border:1px solid var(--border);
-    border-radius:18px;
-    backdrop-filter:blur(30px);
-    padding:16px 20px;
-    font-size:13px; font-weight:300;
-    line-height:1.65; letter-spacing:0.01em;
-    color:rgba(255,255,255,0.7);
-    text-align:center;
-    min-height:0;
-    max-height:120px;
-    overflow-y:auto;
-    opacity:0;
-    transform:translateY(8px);
-    transition:opacity 0.4s ease, transform 0.4s ease;
-  }
-  #resposta.visible {
-    opacity:1; transform:translateY(0);
-  }
-  /* Top shine */
-  #resposta::before {
-    content:''; position:absolute; top:0; left:0; right:0; height:1px;
-    background:linear-gradient(90deg,transparent,rgba(255,255,255,0.12),transparent);
-    border-radius:18px 18px 0 0;
-  }
-
-  #play-btn {
-    display:none;
-    padding:10px 28px;
-    background:rgba(10,132,255,0.1);
-    border:1px solid rgba(10,132,255,0.3);
-    border-radius:50px;
-    color:rgba(10,132,255,0.8);
-    font-size:11px; font-weight:400;
-    letter-spacing:0.2em; text-transform:uppercase;
-    cursor:pointer;
-    transition:all 0.3s ease;
-  }
-  #play-btn:hover {
-    background:rgba(10,132,255,0.18);
-    border-color:rgba(10,132,255,0.5);
-  }
-
-  /* ── Hint tap ── */
-  #hint {
-    position:absolute; bottom:180px;
-    font-size:10px; font-weight:300;
-    letter-spacing:0.2em; text-transform:uppercase;
-    color:var(--text-faint);
-    animation:hintFade 3s ease-in-out infinite;
-  }
-  @keyframes hintFade { 0%,100%{opacity:0.4;} 50%{opacity:1;} }
-  #hint.hide { display:none; }
+  /* SECURITY OVERLAY */
+  #sec-overlay{position:fixed;inset:0;z-index:300;display:none;flex-direction:column;align-items:center;justify-content:center;gap:24px;
+    background:rgba(3,6,20,0.96);backdrop-filter:blur(20px);}
+  #sec-overlay.show{display:flex;}
+  .sec-icon{font-size:48px;filter:drop-shadow(0 0 20px rgba(255,59,48,0.5));}
+  .sec-title{font-size:20px;font-weight:200;letter-spacing:0.1em;color:rgba(255,59,48,0.9);}
+  .sec-sub{font-size:12px;font-weight:300;letter-spacing:0.15em;color:rgba(255,255,255,0.3);text-align:center;max-width:280px;line-height:1.6;}
+  .sec-reactivate{padding:14px 40px;background:rgba(255,59,48,0.08);border:1px solid rgba(255,59,48,0.3);
+    border-radius:50px;color:rgba(255,59,48,0.8);font-size:11px;letter-spacing:0.25em;text-transform:uppercase;cursor:pointer;transition:all 0.3s;}
+  .sec-reactivate:hover{background:rgba(255,59,48,0.15);}
 </style>
 </head>
 <body>
 
-<!-- Background layers -->
 <canvas id="waves"></canvas>
-<div class="grid"></div>
-<div class="scan"></div>
-<div class="corner tl"></div>
-<div class="corner tr"></div>
-<div class="corner bl"></div>
-<div class="corner br"></div>
+<div class="grid"></div><div class="scan"></div>
+<div class="corner tl"></div><div class="corner tr"></div>
+<div class="corner bl"></div><div class="corner br"></div>
 <div id="pts"></div>
 
-<!-- Boot overlay -->
+<!-- BOOT -->
 <div id="overlay">
   <div class="boot-logo">BlueGlass OS · v1.0</div>
   <div class="boot-name">Jarvis</div>
-  <div class="boot-sub">Assistente de Inteligência Artificial</div>
+  <div class="boot-sub">Sistema Autônomo de IA</div>
   <button class="boot-btn" onclick="iniciar()">Inicializar Sistema</button>
 </div>
 
-<!-- Main UI -->
+<!-- SECURITY LOCK -->
+<div id="sec-overlay">
+  <div class="sec-icon">🔒</div>
+  <div class="sec-title">Modo Seguro Ativado</div>
+  <div class="sec-sub">O sistema foi pausado. Todos os processos estão suspensos. Toque para reativar.</div>
+  <button class="sec-reactivate" onclick="reativarSistema()">Reativar Sistema</button>
+</div>
+
+<!-- APP -->
 <div id="app">
   <div class="header">
     <div class="header-logo">BlueGlass · Jarvis</div>
     <div id="clock">--:--</div>
   </div>
 
-  <div id="transcript"></div>
+  <div id="sec-badge">
+    <div class="sec-dot"></div>
+    <span>Sistema Ativo</span>
+  </div>
 
+  <div id="transcript"></div>
   <canvas id="orb" width="260" height="260"></canvas>
 
   <div id="status-pill">
-    <div class="status-dot active-standby" id="dot"></div>
-    <div id="status-text">Aguardando</div>
+    <div class="status-dot s-standby" id="dot"></div>
+    <div id="status-text">Escutando</div>
   </div>
 
-  <div id="hint">toque para falar · diga "jarvis" para ativar</div>
-
-  <div id="resposta-wrap">
-    <div id="resposta"></div>
-    <button id="play-btn" onclick="tocarAudioPendente()">▶ Ouvir resposta</button>
+  <div id="text-panel">
+    <div id="text-area"></div>
+    <div id="text-controls">
+      <button class="tc-btn" onclick="limparTexto()">Limpar</button>
+      <button class="tc-btn" onclick="copiarTexto()">Copiar</button>
+      <button class="tc-btn" onclick="fecharTexto()">Fechar</button>
+    </div>
   </div>
 </div>
 
 <script>
-/* ════════════════════════════════
-   LIQUID WAVE BACKGROUND
-════════════════════════════════ */
-const wvCv = document.getElementById('waves');
-const wvCx = wvCv.getContext('2d');
-function rsz(){ wvCv.width=innerWidth; wvCv.height=innerHeight; }
-rsz(); addEventListener('resize', rsz);
-
-const WV = [
-  {ry:.25,a:18,f:.007,sp:.008,ph:0,   op:.05},
-  {ry:.45,a:14,f:.011,sp:.012,ph:2.1, op:.045},
-  {ry:.65,a:17,f:.008,sp:.009,ph:4.2, op:.04},
-  {ry:.82,a:12,f:.013,sp:.015,ph:1.0, op:.035},
-];
+/* ── WAVES ── */
+const wvCv=document.getElementById('waves'), wvCx=wvCv.getContext('2d');
+function rsz(){wvCv.width=innerWidth;wvCv.height=innerHeight;}
+rsz();addEventListener('resize',rsz);
+const WV=[{ry:.25,a:18,f:.007,sp:.008,ph:0,op:.05},{ry:.45,a:14,f:.011,sp:.012,ph:2.1,op:.045},
+          {ry:.65,a:17,f:.008,sp:.009,ph:4.2,op:.04},{ry:.82,a:12,f:.013,sp:.015,ph:1.0,op:.035}];
 function drawWaves(){
   wvCx.clearRect(0,0,wvCv.width,wvCv.height);
   WV.forEach(w=>{
-    w.ph+=w.sp;
-    const by=wvCv.height*w.ry;
-    wvCx.beginPath(); wvCx.moveTo(0,by);
-    for(let x=0;x<=wvCv.width;x+=3){
-      const y=by+Math.sin(x*w.f+w.ph)*w.a+Math.sin(x*w.f*1.7+w.ph*.6)*(w.a*.35);
-      wvCx.lineTo(x,y);
-    }
-    wvCx.lineTo(wvCv.width,wvCv.height); wvCx.lineTo(0,wvCv.height); wvCx.closePath();
+    w.ph+=w.sp; const by=wvCv.height*w.ry;
+    wvCx.beginPath();wvCx.moveTo(0,by);
+    for(let x=0;x<=wvCv.width;x+=3){const y=by+Math.sin(x*w.f+w.ph)*w.a+Math.sin(x*w.f*1.7+w.ph*.6)*(w.a*.35);wvCx.lineTo(x,y);}
+    wvCx.lineTo(wvCv.width,wvCv.height);wvCx.lineTo(0,wvCv.height);wvCx.closePath();
     const g=wvCx.createLinearGradient(0,by-w.a,0,by+w.a*2);
-    g.addColorStop(0,`rgba(255,255,255,${w.op})`);
-    g.addColorStop(.5,`rgba(10,132,255,${w.op*.5})`);
-    g.addColorStop(1,'rgba(0,0,0,0)');
-    wvCx.fillStyle=g; wvCx.fill();
-    wvCx.beginPath(); wvCx.moveTo(0,by);
-    for(let x=0;x<=wvCv.width;x+=3){
-      const y=by+Math.sin(x*w.f+w.ph)*w.a+Math.sin(x*w.f*1.7+w.ph*.6)*(w.a*.35);
-      wvCx.lineTo(x,y);
-    }
-    wvCx.strokeStyle=`rgba(180,210,255,${w.op*1.8})`; wvCx.lineWidth=.8; wvCx.stroke();
+    g.addColorStop(0,`rgba(255,255,255,${w.op})`);g.addColorStop(.5,`rgba(10,132,255,${w.op*.5})`);g.addColorStop(1,'rgba(0,0,0,0)');
+    wvCx.fillStyle=g;wvCx.fill();
+    wvCx.beginPath();wvCx.moveTo(0,by);
+    for(let x=0;x<=wvCv.width;x+=3){const y=by+Math.sin(x*w.f+w.ph)*w.a+Math.sin(x*w.f*1.7+w.ph*.6)*(w.a*.35);wvCx.lineTo(x,y);}
+    wvCx.strokeStyle=`rgba(180,210,255,${w.op*1.8})`;wvCx.lineWidth=.8;wvCx.stroke();
   });
   requestAnimationFrame(drawWaves);
 }
 requestAnimationFrame(drawWaves);
 
-/* ════════════════════════════════
-   PARTICLES
-════════════════════════════════ */
-const ptCont=document.getElementById('pts');
-const ptPalette=['rgba(255,255,255,0.6)','rgba(255,255,255,0.4)','rgba(10,132,255,0.7)','rgba(100,180,255,0.5)','rgba(255,255,255,0.25)'];
+/* ── PARTICLES ── */
+const ptC=document.getElementById('pts');
+const ptP=['rgba(255,255,255,0.6)','rgba(255,255,255,0.35)','rgba(10,132,255,0.7)','rgba(100,180,255,0.5)'];
 function mkPt(){
-  const el=document.createElement('div'); el.className='pt';
-  const s=Math.random()*3+.8, c=ptPalette[Math.floor(Math.random()*ptPalette.length)];
+  const el=document.createElement('div');el.className='pt';
+  const s=Math.random()*3+.8,c=ptP[Math.floor(Math.random()*ptP.length)];
   el.style.cssText=`width:${s}px;height:${s}px;left:${Math.random()*100}%;background:${c};box-shadow:0 0 ${s*3}px ${c};animation-duration:${Math.random()*10+7}s;animation-delay:${Math.random()*4}s;`;
-  ptCont.appendChild(el); setTimeout(()=>el.remove(),18000);
+  ptC.appendChild(el);setTimeout(()=>el.remove(),18000);
 }
 setInterval(mkPt,400);
 
-/* ════════════════════════════════
-   CLOCK
-════════════════════════════════ */
-function tick(){
-  const n=new Date();
-  document.getElementById('clock').textContent=
-    String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
-}
-tick(); setInterval(tick,1000);
+/* ── CLOCK ── */
+function tick(){const n=new Date();document.getElementById('clock').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
+tick();setInterval(tick,1000);
 
-/* ════════════════════════════════
-   ORB CANVAS
-════════════════════════════════ */
-const orb=document.getElementById('orb');
-const oc=orb.getContext('2d');
-const OW=260, OH=260, OCX=130, OCY=130, OR=82;
-
-let orbT=0, orbAmp=2, orbTargetAmp=2, orbModo='standby';
-
-// Color palettes per state — subtle, glass-like
-const ORB_COLORS={
-  standby:    {inner:'rgba(15,40,120,0.85)',  mid:'rgba(10,80,200,0.7)',   outer:'rgba(10,132,255,0.5)',  stroke:'rgba(100,180,255,0.6)'},
-  ouvindo:    {inner:'rgba(10,80,40,0.85)',   mid:'rgba(20,150,70,0.7)',   outer:'rgba(48,209,88,0.5)',   stroke:'rgba(100,220,140,0.7)'},
-  processando:{inner:'rgba(100,60,0,0.85)',   mid:'rgba(180,110,0,0.7)',   outer:'rgba(255,159,10,0.5)',  stroke:'rgba(255,190,80,0.7)'},
-  falando:    {inner:'rgba(0,50,140,0.85)',   mid:'rgba(0,100,220,0.7)',   outer:'rgba(10,132,255,0.6)',  stroke:'rgba(120,200,255,0.8)'},
+/* ── ORB ── */
+const orb=document.getElementById('orb'),oc=orb.getContext('2d');
+const OCX=130,OCY=130,OR=82;
+let orbT=0,orbAmp=2,orbTarget=2,orbModo='standby';
+const ORB_C={
+  standby:{inner:'rgba(15,40,120,0.85)',mid:'rgba(10,80,200,0.7)',outer:'rgba(10,132,255,0.5)',stroke:'rgba(100,180,255,0.6)'},
+  ouvindo:{inner:'rgba(10,80,40,0.85)',mid:'rgba(20,150,70,0.7)',outer:'rgba(48,209,88,0.5)',stroke:'rgba(100,220,140,0.7)'},
+  processando:{inner:'rgba(100,60,0,0.85)',mid:'rgba(180,110,0,0.7)',outer:'rgba(255,159,10,0.5)',stroke:'rgba(255,190,80,0.7)'},
+  falando:{inner:'rgba(0,50,140,0.85)',mid:'rgba(0,100,220,0.7)',outer:'rgba(10,132,255,0.6)',stroke:'rgba(120,200,255,0.8)'},
+  seguro:{inner:'rgba(120,10,10,0.85)',mid:'rgba(200,20,20,0.7)',outer:'rgba(255,59,48,0.5)',stroke:'rgba(255,100,90,0.7)'},
+  escrevendo:{inner:'rgba(80,10,120,0.85)',mid:'rgba(140,30,200,0.7)',outer:'rgba(191,90,242,0.5)',stroke:'rgba(210,140,255,0.7)'},
 };
-
-let orbCurInner='rgba(15,40,120,0.85)', orbCurMid='rgba(10,80,200,0.7)', orbCurOuter='rgba(10,132,255,0.5)', orbCurStroke='rgba(100,180,255,0.6)';
-
-function lerpColor(c1,c2,f){
-  const p=s=>{const m=s.match(/[\d.]+/g).map(Number);return m;};
-  const a=p(c1),b=p(c2);
-  const r=a.map((v,i)=>v+(b[i]-v)*f);
-  if(c1.startsWith('rgba')) return `rgba(${Math.round(r[0])},${Math.round(r[1])},${Math.round(r[2])},${r[3].toFixed(2)})`;
-  return `rgb(${Math.round(r[0])},${Math.round(r[1])},${Math.round(r[2])})`;
+let cI='rgba(15,40,120,0.85)',cM='rgba(10,80,200,0.7)',cO='rgba(10,132,255,0.5)',cS='rgba(100,180,255,0.6)';
+function lC(c1,c2,f){
+  const p=s=>s.match(/[\d.]+/g).map(Number);
+  const a=p(c1),b=p(c2),r=a.map((v,i)=>v+(b[i]-v)*f);
+  return c1.startsWith('rgba')?`rgba(${Math.round(r[0])},${Math.round(r[1])},${Math.round(r[2])},${r[3].toFixed(2)})`:`rgb(${Math.round(r[0])},${Math.round(r[1])},${Math.round(r[2])})`;
 }
-
 function drawOrb(){
-  oc.clearRect(0,0,OW,OH);
-  const tgt=ORB_COLORS[orbModo]||ORB_COLORS.standby;
-  orbCurInner=lerpColor(orbCurInner,tgt.inner,.04);
-  orbCurMid  =lerpColor(orbCurMid,  tgt.mid,  .04);
-  orbCurOuter=lerpColor(orbCurOuter,tgt.outer, .04);
-  orbCurStroke=lerpColor(orbCurStroke,tgt.stroke,.04);
-
-  // Outer glow rings
+  oc.clearRect(0,0,260,260);
+  const t=ORB_C[orbModo]||ORB_C.standby;
+  cI=lC(cI,t.inner,.04);cM=lC(cM,t.mid,.04);cO=lC(cO,t.outer,.04);cS=lC(cS,t.stroke,.04);
   for(let i=5;i>0;i--){
     const gr=OR*1.6*(i/5)+orbAmp*.5;
-    oc.beginPath(); oc.arc(OCX,OCY,gr,0,Math.PI*2);
+    oc.beginPath();oc.arc(OCX,OCY,gr,0,Math.PI*2);
     const ga=oc.createRadialGradient(OCX,OCY,0,OCX,OCY,gr);
-    ga.addColorStop(0,'rgba(0,0,0,0)');
-    ga.addColorStop(.7,'rgba(0,0,0,0)');
-    ga.addColorStop(1,orbCurOuter.replace(/[\d.]+\)/,`${.04*i})`));
-    oc.fillStyle=ga; oc.fill();
+    ga.addColorStop(0,'rgba(0,0,0,0)');ga.addColorStop(.7,'rgba(0,0,0,0)');
+    ga.addColorStop(1,cO.replace(/[\d.]+\)/,`${.04*i})`));
+    oc.fillStyle=ga;oc.fill();
   }
-
-  // Main blob
-  const N=220; oc.beginPath();
+  const N=220;oc.beginPath();
   for(let i=0;i<=N;i++){
     const th=(2*Math.PI*i)/N;
-    const wave=
-      Math.sin(2*th+orbT)       *orbAmp*.30+
-      Math.sin(3*th-orbT*1.3)   *orbAmp*.22+
-      Math.sin(5*th+orbT*.9)    *orbAmp*.14+
-      Math.sin(7*th-orbT*1.1)   *orbAmp*.09+
-      Math.sin(th*1.5+orbT*.5)  *orbAmp*.14+
-      Math.sin(11*th+orbT*1.7)  *orbAmp*.05;
-    const rad=OR+wave;
-    const x=OCX+rad*Math.cos(th), y=OCY+rad*Math.sin(th);
+    const wave=Math.sin(2*th+orbT)*orbAmp*.30+Math.sin(3*th-orbT*1.3)*orbAmp*.22+Math.sin(5*th+orbT*.9)*orbAmp*.14+Math.sin(7*th-orbT*1.1)*orbAmp*.09+Math.sin(th*1.5+orbT*.5)*orbAmp*.14+Math.sin(11*th+orbT*1.7)*orbAmp*.05;
+    const rad=OR+wave,x=OCX+rad*Math.cos(th),y=OCY+rad*Math.sin(th);
     i===0?oc.moveTo(x,y):oc.lineTo(x,y);
   }
   oc.closePath();
-
-  // Glass-like gradient fill
   const gf=oc.createRadialGradient(OCX-OR*.2,OCY-OR*.35,OR*.05,OCX,OCY,OR+orbAmp);
-  gf.addColorStop(0,  orbCurOuter);
-  gf.addColorStop(.45,orbCurMid);
-  gf.addColorStop(1,  orbCurInner);
-  oc.fillStyle=gf; oc.fill();
-
-  // Stroke
-  oc.strokeStyle=orbCurStroke; oc.lineWidth=1.2; oc.stroke();
-
-  // Glass highlight — top left shine
-  oc.beginPath(); oc.arc(OCX-OR*.28,OCY-OR*.42,OR*.10,0,Math.PI*2);
+  gf.addColorStop(0,cO);gf.addColorStop(.45,cM);gf.addColorStop(1,cI);
+  oc.fillStyle=gf;oc.fill();oc.strokeStyle=cS;oc.lineWidth=1.2;oc.stroke();
+  oc.beginPath();oc.arc(OCX-OR*.28,OCY-OR*.42,OR*.10,0,Math.PI*2);
   const gh=oc.createRadialGradient(OCX-OR*.28,OCY-OR*.42,0,OCX-OR*.28,OCY-OR*.42,OR*.10);
-  gh.addColorStop(0,'rgba(255,255,255,0.22)'); gh.addColorStop(1,'rgba(255,255,255,0)');
-  oc.fillStyle=gh; oc.fill();
-
-  // Secondary smaller highlight
-  oc.beginPath(); oc.arc(OCX+OR*.3,OCY-OR*.1,OR*.05,0,Math.PI*2);
-  const gh2=oc.createRadialGradient(OCX+OR*.3,OCY-OR*.1,0,OCX+OR*.3,OCY-OR*.1,OR*.05);
-  gh2.addColorStop(0,'rgba(255,255,255,0.12)'); gh2.addColorStop(1,'rgba(255,255,255,0)');
-  oc.fillStyle=gh2; oc.fill();
-
-  // Speed & amplitude per mode
-  const spd={standby:.007,ouvindo:.08,processando:.14,falando:.18};
-  const tgt2={standby:2,ouvindo:18,processando:28,falando:42};
+  gh.addColorStop(0,'rgba(255,255,255,0.22)');gh.addColorStop(1,'rgba(255,255,255,0)');
+  oc.fillStyle=gh;oc.fill();
+  const spd={standby:.007,ouvindo:.08,processando:.14,falando:.18,seguro:.03,escrevendo:.05};
+  const tgt={standby:2,ouvindo:18,processando:28,falando:42,seguro:8,escrevendo:12};
   orbT+=spd[orbModo]||.007;
-  orbTargetAmp=tgt2[orbModo]||2;
-  orbAmp+=(orbTargetAmp-orbAmp)*.08;
-
+  orbTarget=tgt[orbModo]||2;
+  orbAmp+=(orbTarget-orbAmp)*.08;
   requestAnimationFrame(drawOrb);
 }
 drawOrb();
 
-/* ════════════════════════════════
-   STATE MACHINE
-════════════════════════════════ */
-const dotEl       = document.getElementById('dot');
-const statusTextEl= document.getElementById('status-text');
-const transcriptEl= document.getElementById('transcript');
-const respostaEl  = document.getElementById('resposta');
-const playBtn     = document.getElementById('play-btn');
-const hintEl      = document.getElementById('hint');
-
+/* ── STATE ── */
+const dotEl=document.getElementById('dot'),stEl=document.getElementById('status-text');
+const trEl=document.getElementById('transcript'),secBadge=document.getElementById('sec-badge');
 const ESTADOS={
-  standby:    {dot:'active-standby', txt:'Aguardando',    statusColor:'rgba(255,255,255,0.35)'},
-  ouvindo:    {dot:'active-ouvindo', txt:'Ouvindo',       statusColor:'rgba(48,209,88,0.8)'},
-  processando:{dot:'active-processando',txt:'Processando',statusColor:'rgba(255,159,10,0.8)'},
-  falando:    {dot:'active-falando', txt:'Falando',       statusColor:'rgba(10,132,255,0.9)'},
+  standby:   {dot:'s-standby',   txt:'Escutando',    cor:'rgba(255,255,255,0.35)'},
+  ouvindo:   {dot:'s-ouvindo',   txt:'Ouvindo',       cor:'rgba(48,209,88,0.8)'},
+  processando:{dot:'s-processando',txt:'Processando', cor:'rgba(255,159,10,0.8)'},
+  falando:   {dot:'s-falando',   txt:'Falando',       cor:'rgba(10,132,255,0.9)'},
+  seguro:    {dot:'s-seguro',    txt:'Modo Seguro',   cor:'rgba(255,59,48,0.9)'},
+  escrevendo:{dot:'s-escrevendo',txt:'Escrevendo',    cor:'rgba(191,90,242,0.9)'},
 };
-
 function setModo(m){
   orbModo=m;
-  orb.className=m;
   const e=ESTADOS[m]||ESTADOS.standby;
   dotEl.className='status-dot '+e.dot;
-  statusTextEl.textContent=e.txt;
-  statusTextEl.style.color=e.statusColor;
-  if(m==='standby') hintEl.classList.remove('hide');
-  else hintEl.classList.add('hide');
+  stEl.textContent=e.txt;stEl.style.color=e.cor;
 }
 
-function mostrarResposta(txt){
-  respostaEl.textContent=txt;
-  respostaEl.classList.add('visible');
+/* ── TEXT PANEL ── */
+const textArea=document.getElementById('text-area');
+const textControls=document.getElementById('text-controls');
+let textoAtivo=false, textoAcumulado='';
+
+function mostrarTexto(txt, acumular=false){
+  if(acumular) textoAcumulado+=(textoAcumulado?'\n':'')+txt;
+  else textoAcumulado=txt;
+  textArea.textContent=textoAcumulado;
+  textArea.classList.add('visible');
+  textControls.classList.add('visible');
+  textoAtivo=true;
 }
-function limparResposta(){
-  respostaEl.classList.remove('visible');
-  setTimeout(()=>{ respostaEl.textContent=''; },400);
+function limparTexto(){ textoAcumulado=''; textArea.textContent=''; }
+function copiarTexto(){ navigator.clipboard?.writeText(textoAcumulado); }
+function fecharTexto(){
+  textArea.classList.remove('visible');
+  textControls.classList.remove('visible');
+  setTimeout(()=>{textArea.textContent='';textoAcumulado='';},400);
+  textoAtivo=false;
 }
 
-/* ════════════════════════════════
-   AUDIO
-════════════════════════════════ */
+/* ── SECURITY ── */
+let sistemaSeguro=false;
+const FRASE_SEGURA=['modo seguro','mode seguro'];
+const FRASE_REATIVAR=['reativar','ativar sistema','retomar'];
+
+function ativarModoSeguro(){
+  sistemaSeguro=true;
+  setModo('seguro');
+  pararRec();
+  secBadge.classList.add('locked');
+  secBadge.querySelector('span').textContent='Modo Seguro';
+  document.getElementById('sec-overlay').classList.add('show');
+}
+
+function reativarSistema(){
+  sistemaSeguro=false;
+  document.getElementById('sec-overlay').classList.remove('show');
+  secBadge.classList.remove('locked');
+  secBadge.querySelector('span').textContent='Sistema Ativo';
+  setModo('standby');
+  setTimeout(escutarWake,500);
+}
+
+/* ── AUDIO ── */
 let audioCtx=null, audioPendente=null, ocupado=false;
-const USER_ID = (()=>{
-  // Pega user_id de query string ?u=xxx ou usa fallback
-  const p=new URLSearchParams(location.search);
-  return p.get('u')||'jonas';
-})();
+const USER_ID=(()=>{const p=new URLSearchParams(location.search);return p.get('u')||'jonas';})();
 
 async function tocarAudio(b64){
   try{
     if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
     if(audioCtx.state==='suspended') await audioCtx.resume();
-    const bin=atob(b64), bytes=new Uint8Array(bin.length);
+    const bin=atob(b64),bytes=new Uint8Array(bin.length);
     for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
     const buf=await audioCtx.decodeAudioData(bytes.buffer);
     const src=audioCtx.createBufferSource();
-    src.buffer=buf; src.connect(audioCtx.destination);
+    src.buffer=buf;src.connect(audioCtx.destination);
     src.onended=()=>{
-      setModo('standby'); limparResposta();
-      transcriptEl.textContent='';
-      playBtn.style.display='none'; audioPendente=null; ocupado=false;
-      escutarWake();
+      setModo('standby');trEl.textContent='';
+      audioPendente=null;ocupado=false;
+      if(!sistemaSeguro) escutarWake();
     };
-    src.start(0); playBtn.style.display='none'; return true;
-  }catch(e){ ocupado=false; return false; }
+    src.start(0);return true;
+  }catch(e){ocupado=false;return false;}
 }
-function tocarAudioPendente(){ if(audioPendente) tocarAudio(audioPendente); }
 
-/* ════════════════════════════════
-   SPEECH RECOGNITION
-════════════════════════════════ */
+/* ── SPEECH ── */
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-let recAtivo=null, ativo=false, pauseTimer=null, transcriptAcum='';
+let recAtivo=null,ativo=false,pauseTimer=null,transcriptAcum='';
 
-// Wake words — mais específicas para evitar falsos positivos
-const WAKE_WORDS=['jarvis','jarves','jarvi','jarviz'];
+// Detecta intenção de escrita na pergunta
+function detectarEscrita(txt){
+  const gatilhos=['escreve','escreva','anota','anote','registra','registre','coloca no texto','salva','salve','texto:','digite','digita'];
+  return gatilhos.some(g=>txt.toLowerCase().includes(g));
+}
+
+// Extrai o que deve ser escrito
+function extrairTextoParaEscrever(txt){
+  const prefixos=['escreve ','escreva ','anota ','anote ','registra ','registre ','salva ','salve ','digita ','digite ','texto: ','texto:'];
+  let result=txt;
+  for(const p of prefixos){
+    const idx=result.toLowerCase().indexOf(p);
+    if(idx!==-1){result=result.slice(idx+p.length);break;}
+  }
+  return result.trim();
+}
 
 function iniciar(){
   audioCtx=new(window.AudioContext||window.webkitAudioContext)();
   const ov=document.getElementById('overlay');
-  ov.classList.add('hide');
-  setTimeout(()=>ov.style.display='none',900);
-  ativo=true; escutarWake();
+  ov.classList.add('hide');setTimeout(()=>ov.style.display='none',900);
+  ativo=true;escutarWake();
 }
 
 function pararRec(){
-  if(recAtivo){try{recAtivo.stop();}catch(e){} recAtivo=null;}
+  if(recAtivo){try{recAtivo.stop();}catch(e){}recAtivo=null;}
   clearTimeout(pauseTimer);
 }
 
+// WAKE WORD — sempre ouvindo
 function escutarWake(){
-  if(!SR||!ativo||ocupado) return;
-  pararRec(); setModo('standby');
+  if(!SR||!ativo||ocupado||sistemaSeguro) return;
+  pararRec();setModo('standby');
   const rec=new SR();
-  rec.lang='pt-BR'; rec.continuous=false; rec.interimResults=false; rec.maxAlternatives=3;
+  rec.lang='pt-BR';rec.continuous=false;rec.interimResults=false;rec.maxAlternatives=3;
   recAtivo=rec;
   rec.onresult=(e)=>{
     for(let r=0;r<e.results.length;r++){
       for(let a=0;a<e.results[r].length;a++){
         const txt=e.results[r][a].transcript.toLowerCase().trim();
-        if(WAKE_WORDS.some(w=>txt.includes(w))){
-          recAtivo=null; ouvirComando(); return;
+        if(['jarvis','jarves','jarvi','jarviz'].some(w=>txt.includes(w))){
+          recAtivo=null;ouvirComando();return;
         }
       }
     }
-    recAtivo=null; escutarWake();
+    recAtivo=null;escutarWake();
   };
-  rec.onerror=()=>{ recAtivo=null; if(ativo&&!ocupado) setTimeout(escutarWake,300); };
-  rec.onend=()=>{ if(recAtivo===rec) recAtivo=null; if(ativo&&!ocupado&&orbModo==='standby') setTimeout(escutarWake,100); };
-  try{ rec.start(); }catch(e){ recAtivo=null; setTimeout(escutarWake,500); }
+  rec.onerror=()=>{recAtivo=null;if(ativo&&!ocupado&&!sistemaSeguro) setTimeout(escutarWake,300);};
+  rec.onend=()=>{if(recAtivo===rec)recAtivo=null;if(ativo&&!ocupado&&!sistemaSeguro&&orbModo==='standby') setTimeout(escutarWake,100);};
+  try{rec.start();}catch(e){recAtivo=null;setTimeout(escutarWake,500);}
 }
 
+// COMANDO — ouve o que o usuário quer
 function ouvirComando(){
-  if(ocupado) return;
-  pararRec(); setModo('ouvindo');
-  transcriptAcum=''; transcriptEl.textContent='';
+  if(ocupado||sistemaSeguro) return;
+  pararRec();setModo('ouvindo');
+  transcriptAcum='';trEl.textContent='';
   const rec=new SR();
-  rec.lang='pt-BR'; rec.continuous=true; rec.interimResults=true; rec.maxAlternatives=1;
+  rec.lang='pt-BR';rec.continuous=true;rec.interimResults=true;rec.maxAlternatives=1;
   recAtivo=rec;
   rec.onresult=(e)=>{
-    let interim='', final='';
+    let interim='',final='';
     for(let i=e.resultIndex;i<e.results.length;i++){
-      const txt=e.results[i][0].transcript;
-      if(e.results[i].isFinal) final+=txt; else interim+=txt;
+      const t=e.results[i][0].transcript;
+      if(e.results[i].isFinal) final+=t; else interim+=t;
     }
     if(final) transcriptAcum+=final;
-    transcriptEl.textContent=transcriptAcum||interim;
+    trEl.textContent=transcriptAcum||interim;
     clearTimeout(pauseTimer);
     if(transcriptAcum||final){
       pauseTimer=setTimeout(()=>{
         const p=transcriptAcum.trim();
-        if(p&&!ocupado){ try{rec.stop();}catch(e){} recAtivo=null; processarPergunta(p); }
+        if(p&&!ocupado){try{rec.stop();}catch(e){}recAtivo=null;processarComando(p);}
       },1600);
     }
   };
   rec.onerror=()=>{
-    clearTimeout(pauseTimer); recAtivo=null;
+    clearTimeout(pauseTimer);recAtivo=null;
     const p=transcriptAcum.trim();
-    if(p&&!ocupado) processarPergunta(p);
-    else if(!ocupado){ setModo('standby'); transcriptEl.textContent=''; setTimeout(escutarWake,200); }
+    if(p&&!ocupado) processarComando(p);
+    else if(!ocupado){setModo('standby');trEl.textContent='';setTimeout(escutarWake,200);}
   };
   rec.onend=()=>{
-    clearTimeout(pauseTimer);
-    if(recAtivo===rec) recAtivo=null;
+    clearTimeout(pauseTimer);if(recAtivo===rec)recAtivo=null;
     if(orbModo==='ouvindo'&&!ocupado){
       const p=transcriptAcum.trim();
-      if(p) processarPergunta(p);
-      else{ setModo('standby'); transcriptEl.textContent=''; setTimeout(escutarWake,200); }
+      if(p) processarComando(p);
+      else{setModo('standby');trEl.textContent='';setTimeout(escutarWake,200);}
     }
   };
-  try{ rec.start(); }catch(e){ recAtivo=null; setModo('standby'); setTimeout(escutarWake,500); }
+  try{rec.start();}catch(e){recAtivo=null;setModo('standby');setTimeout(escutarWake,500);}
 }
 
-/* ════════════════════════════════
-   API
-════════════════════════════════ */
-async function processarPergunta(pergunta){
-  if(ocupado) return;
-  ocupado=true; pararRec(); setModo('processando');
-  transcriptEl.textContent=pergunta; limparResposta();
+// PROCESSAR COMANDO — decide o que fazer
+async function processarComando(pergunta){
+  if(ocupado||sistemaSeguro) return;
 
-  // Timeout de 20s para não travar
+  // CHAVE DE SEGURANÇA
+  if(FRASE_SEGURA.some(f=>pergunta.toLowerCase().includes(f))){
+    ativarModoSeguro(); return;
+  }
+
+  // MODO ESCRITA — Jarvis escreve na tela
+  if(detectarEscrita(pergunta)){
+    const textoParaEscrever=extrairTextoParaEscrever(pergunta);
+    ocupado=true;pararRec();setModo('processando');
+    try{
+      const res=await fetch('/perguntar',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          pergunta:`O usuário pediu para você escrever/anotar o seguinte: "${textoParaEscrever}". Confirme brevemente por voz que anotou e formate o texto de forma limpa para exibição. Retorne no formato JSON: {"confirmacao":"texto falado","texto_formatado":"texto para tela"}`,
+          user_id:USER_ID
+        }),
+        signal:AbortSignal.timeout(20000)
+      });
+      const dados=await res.json();
+      let confirmacao=dados.resposta, textoFmt=textoParaEscrever;
+      try{
+        const json=JSON.parse(dados.resposta.replace(/```json|```/g,'').trim());
+        confirmacao=json.confirmacao||dados.resposta;
+        textoFmt=json.texto_formatado||textoParaEscrever;
+      }catch(e){}
+      setModo('escrevendo');
+      mostrarTexto(textoFmt, true);
+      if(dados.audio){await tocarAudio(dados.audio);}
+      else{ocupado=false;setModo('standby');setTimeout(escutarWake,300);}
+    }catch(err){
+      ocupado=false;setModo('standby');trEl.textContent='';setTimeout(escutarWake,300);
+    }
+    return;
+  }
+
+  // PERGUNTA NORMAL
+  ocupado=true;pararRec();setModo('processando');trEl.textContent=pergunta;
   const controller=new AbortController();
   const timeout=setTimeout(()=>controller.abort(),20000);
-
   try{
     const res=await fetch('/perguntar',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({pergunta, user_id:USER_ID}),
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({pergunta,user_id:USER_ID}),
       signal:controller.signal
     });
     clearTimeout(timeout);
-    if(!res.ok) throw new Error('API error '+res.status);
+    if(!res.ok) throw new Error('API '+res.status);
     const dados=await res.json();
     if(dados.erro) throw new Error(dados.erro);
-
-    mostrarResposta(dados.resposta);
-    setModo('falando');
-    audioPendente=dados.audio;
+    setModo('falando');audioPendente=dados.audio;
     const ok=await tocarAudio(dados.audio);
-    if(!ok){ playBtn.style.display='block'; ocupado=false; }
+    if(!ok){ocupado=false;setModo('standby');setTimeout(escutarWake,300);}
   }catch(err){
-    clearTimeout(timeout);
-    ocupado=false; setModo('standby');
-    transcriptEl.textContent='';
-    if(err.name!=='AbortError') console.error('Jarvis error:',err);
+    clearTimeout(timeout);ocupado=false;setModo('standby');trEl.textContent='';
     setTimeout(escutarWake,300);
   }
 }
 
-/* ── Tap orb to speak ── */
-orb.addEventListener('click',()=>{
-  if(ativo&&orbModo==='standby'&&!ocupado) ouvirComando();
-});
+// Toque no orb para ativar manualmente (backup)
+orb.addEventListener('click',()=>{if(ativo&&orbModo==='standby'&&!ocupado&&!sistemaSeguro) ouvirComando();});
 </script>
 </body>
 </html>
